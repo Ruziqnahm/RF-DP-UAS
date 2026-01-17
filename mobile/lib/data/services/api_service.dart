@@ -5,13 +5,23 @@ import '../models/material_model.dart';
 import '../models/finishing_model.dart';
 
 class ApiService {
+  // Ganti dengan IP address komputer Anda yang menjalankan Laravel
+  // Untuk testing lokal: http://192.168.x.x:8000/api
+  // Untuk production: https://yourdomain.com/api
   static const String baseUrl = 'http://192.168.1.100:8000/api';
   
+  // Alternative untuk emulator Android
+  // static const String baseUrl = 'http://10.0.2.2:8000/api';
+  
+  // Headers
   static Map<String, String> get headers => {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       };
 
+  // ============ PRODUCTS API ============
+  
+  /// Fetch all products with materials and finishings
   static Future<List<Product>> getProducts() async {
     try {
       final response = await http.get(
@@ -32,10 +42,12 @@ class ApiService {
       }
     } catch (e) {
       print('Error fetching products: $e');
+      // Return dummy data as fallback
       return Product.getDummyProducts();
     }
   }
 
+  /// Fetch single product by ID
   static Future<Product?> getProduct(int id) async {
     try {
       final response = await http.get(
@@ -56,6 +68,7 @@ class ApiService {
     }
   }
 
+  /// Fetch materials for a specific product
   static Future<List<Material>> getMaterialsForProduct(int productId) async {
     try {
       final response = await http.get(

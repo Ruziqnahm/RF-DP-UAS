@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:rf_digital_printing/core/theme/app_theme.dart';
+import 'package:mobile/core/theme/app_theme.dart';
 
 class AboutPage extends StatelessWidget {
   const AboutPage({Key? key}) : super(key: key);
