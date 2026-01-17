@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:rf_digital_printing/core/theme/app_theme.dart';
-import 'package:rf_digital_printing/data/models/product_model.dart';
-import 'package:rf_digital_printing/presentation/pages/product_detail_page.dart';
+import 'package:mobile/core/theme/app_theme.dart';
+import 'package:mobile/data/models/product_model.dart';
+import 'package:mobile/presentation/pages/product_detail_page.dart';
 
 class ServicesPage extends StatelessWidget {
   const ServicesPage({Key? key}) : super(key: key);
