@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:rf_digital_printing/core/theme/app_theme.dart';
+import 'package:mobile/core/theme/app_theme.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ContactPage extends StatefulWidget {
