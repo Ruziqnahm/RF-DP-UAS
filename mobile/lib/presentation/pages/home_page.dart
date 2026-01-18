@@ -7,6 +7,7 @@ import '../widgets/product_card.dart';
 import 'product_detail_page.dart';
 import 'about_page.dart';
 import 'contact_page.dart';
+import 'services_page.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class HomePage extends StatefulWidget {
