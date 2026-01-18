@@ -33,7 +33,25 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   final ImagePicker _picker = ImagePicker();
   bool _isSubmittingOrder = false;
   
-  final List<String> sizes = ['A3', 'A4', 'A5', 'Custom'];
+  List<String> getSizesForProduct() {
+    final name = widget.product.name.toLowerCase();
+    // Logika untuk Stiker Vinyl dan UV Printing
+    if (name.contains('stiker vinyl') || name.contains('uv printing')) {
+      return ['A3', 'A4', 'A5', 'Custom'];
+    }
+    // Logika untuk Banner Indoor (Hanya Custom)
+    else if (name.contains('banner indoor')) {
+      return ['Custom'];
+    }
+    // Logika untuk Kartu Nama (Hanya Custom)
+    else if (name.contains('kartu nama')) {
+      return ['Custom'];
+    }
+    // Default untuk produk lain
+    else {
+      return ['Custom'];
+    }
+  }
   final List<String> finishings = ['Glossy', 'Doff', 'Laminating', 'Tanpa Finishing'];
   
   @override
@@ -156,6 +174,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   }
 
   Widget _buildSizeDropdown(OrderProvider provider) {
+    final sizes = getSizesForProduct();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -485,75 +504,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   }
 
   Widget _buildDeliverySection(OrderProvider provider) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Waktu Pengerjaan',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        
-        SizedBox(height: 16),
-        
-        // Date picker
-        InkWell(
-          onTap: () => _selectDeliveryDate(provider),
-          child: Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey[300]!),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.calendar_today, color: Theme.of(context).primaryColor),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    provider.specification.deliveryDate != null
-                        ? _formatDate(provider.specification.deliveryDate!)
-                        : 'Pilih tanggal selesai',
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: provider.specification.deliveryDate != null
-                          ? Colors.black
-                          : Colors.grey[600],
-                    ),
-                  ),
-                ),
-                Icon(Icons.arrow_drop_down),
-              ],
-            ),
-          ),
-        ),
-        
-        SizedBox(height: 16),
-        
-        // Urgent checkbox
-        Container(
-          decoration: BoxDecoration(
-            color: provider.specification.isUrgent ? Colors.orange[50] : Colors.grey[50],
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: provider.specification.isUrgent ? Colors.orange : Colors.grey[300]!,
-            ),
-          ),
-          child: CheckboxListTile(
-            title: Text(
-              'Pesanan Urgent',
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
-            subtitle: Text(
-              '+30% biaya untuk pengerjaan lebih cepat (1-2 hari)',
-              style: TextStyle(fontSize: 12),
-            ),
-            value: provider.specification.isUrgent,
-            onChanged: (value) => provider.setUrgent(value ?? false),
-            activeColor: Colors.orange,
-          ),
-        ),
-      ],
-    );
+    return const SizedBox.shrink();
   }
 
   void _selectDeliveryDate(OrderProvider provider) async {

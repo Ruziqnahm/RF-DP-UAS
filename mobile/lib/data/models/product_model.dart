@@ -71,7 +71,7 @@ class Product {
         id: 1,
         name: 'Banner Indoor',
         category: 'Banner',
-        basePrice: 20000,
+        basePrice: 20000, // Rp 2
         unit: 'Meter',
         description: 'Banner dengan kualitas printing terbaik - Rp 20.000/Meter',
         imageUrl: 'assets/images/cetak_banner.jpg', 
@@ -80,16 +80,16 @@ class Product {
         id: 2,
         name: 'Stiker Vinyl',
         category: 'Stiker',
-        basePrice: 25000,
+        basePrice: 10000, // Rp 10.000 per A4
         unit: 'Lembar',
-        description: 'Stiker vinyl berkualitas premium - Rp 25.000/Lembar',
+        description: 'Stiker vinyl kualitas premium - Rp 10.000/A4',
         imageUrl: 'assets/images/cetak_stiker_vinyl.jpg',
       ),
       Product(
         id: 3,
         name: 'Kartu Nama',
         category: 'Kartu',
-        basePrice: 30000,
+        basePrice: 30000, // Rp 30.000 per pack (harga umum)
         unit: 'Pack',
         description: 'Kartu nama dengan bahan premium - Rp 30.000/pack',
         imageUrl: 'assets/images/kartu_nama.jpg',
@@ -98,7 +98,7 @@ class Product {
         id: 4,
         name: 'UV Printing',
         category: 'UV',
-        basePrice: 15000,
+        basePrice: 15000, // Rp 15.000 per pack (harga umum)
         unit: 'Pack',
         description: 'Cetak UV dengan hasil timbul dan glossy - Rp 15.000/pack',
         imageUrl: 'assets/images/uv_cetak.jpg',
