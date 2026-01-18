@@ -1,0 +1,16 @@
+[33m3af3c3f[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfitur-logic[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{0}: pull origin main: Fast-forward
+[33mc18dd6b[m HEAD@{1}: reset: moving to HEAD
+[33mc18dd6b[m HEAD@{2}: pull origin main: Fast-forward
+[33mb00b89d[m HEAD@{3}: pull origin main: Fast-forward
+[33mf6afdc3[m[33m ([m[1;31morigin/fitur-logic[m[33m)[m HEAD@{4}: reset: moving to HEAD
+[33mf6afdc3[m[33m ([m[1;31morigin/fitur-logic[m[33m)[m HEAD@{5}: commit: feat(backend): konfigurasi Laravel
+[33m1f4eaa3[m HEAD@{6}: commit: feat(api): implementasi endpoint
+[33m2f7b1d0[m HEAD@{7}: commit: feat(backend): buat admin user default
+[33m138c9b0[m HEAD@{8}: commit: feat(backend): buat seeder untuk materials
+[33m6ef8706[m HEAD@{9}: commit: feat(backend): buat seeder untuk products
+[33mf805fdc[m HEAD@{10}: commit: feat(backend): buat Model dan relasi Eloquent
+[33m8344904[m HEAD@{11}: commit: konfigurasi database dan migrasi awal
+[33m41d00ca[m HEAD@{12}: pull origin main: Fast-forward
+[33m7267acc[m HEAD@{13}: commit: Configure Flutter project dependencies and analysis options
+[33mf59faa2[m[33m ([m[1;32mdevelop[m[33m)[m HEAD@{14}: checkout: moving from develop to fitur-logic
+[33mf59faa2[m[33m ([m[1;32mdevelop[m[33m)[m HEAD@{15}: initial pull

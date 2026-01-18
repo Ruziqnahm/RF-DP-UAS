@@ -5,7 +5,6 @@ import '../providers/order_provider.dart';
 import '../providers/product_provider.dart';
 import '../widgets/product_card.dart';
 import 'product_detail_page.dart';
-import 'services_page.dart';
 import 'about_page.dart';
 import 'contact_page.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -34,13 +33,13 @@ class _HomePageState extends State<HomePage> {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
   }
-  
+
   // Helper untuk format harga dengan pemisah ribuan
   String _formatPrice(int price) {
     return price.toString().replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (Match m) => '${m[1]}.',
-    );
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (Match m) => '${m[1]}.',
+        );
   }
 
   @override
@@ -99,7 +98,8 @@ class _HomePageState extends State<HomePage> {
                       children: [
                         Builder(
                           builder: (context) => IconButton(
-                            icon: const Icon(Icons.menu, color: Colors.white, size: 28),
+                            icon: const Icon(Icons.menu,
+                                color: Colors.white, size: 28),
                             onPressed: () {
                               Scaffold.of(context).openDrawer();
                             },
@@ -129,7 +129,8 @@ class _HomePageState extends State<HomePage> {
                             color: Colors.white.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(Icons.print, color: Colors.white, size: 32),
+                          child: const Icon(Icons.print,
+                              color: Colors.white, size: 32),
                         ),
                         const SizedBox(width: 16),
                         const Expanded(
@@ -256,7 +257,7 @@ class _HomePageState extends State<HomePage> {
                   }
 
                   final products = productProvider.products;
-                  
+
                   if (products.isEmpty) {
                     return const Center(
                       child: Padding(
@@ -271,7 +272,8 @@ class _HomePageState extends State<HomePage> {
                     child: GridView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
                         crossAxisSpacing: 16,
                         mainAxisSpacing: 16,
@@ -280,12 +282,16 @@ class _HomePageState extends State<HomePage> {
                       itemCount: products.length,
                       itemBuilder: (context, index) {
                         final product = products[index];
-                        
+
                         // Format harga dengan satuan
                         String getSatuan(String name) {
-                          if (name.toLowerCase().contains('banner')) return '/Meter';
-                          if (name.toLowerCase().contains('fancy') || name.toLowerCase().contains('paper')) return '/Lembar';
-                          if (name.toLowerCase().contains('kartu')) return '/pack';
+                          if (name.toLowerCase().contains('banner'))
+                            return '/Meter';
+                          if (name.toLowerCase().contains('fancy') ||
+                              name.toLowerCase().contains('paper'))
+                            return '/Lembar';
+                          if (name.toLowerCase().contains('kartu'))
+                            return '/pack';
                           if (name.toLowerCase().contains('uv')) return '/pack';
                           return '';
                         }
@@ -293,7 +299,8 @@ class _HomePageState extends State<HomePage> {
                         return ProductCard(
                           name: product.name,
                           category: product.category,
-                          price: 'Rp ${_formatPrice(product.basePrice)}${getSatuan(product.name)}',
+                          price:
+                              'Rp ${_formatPrice(product.basePrice)}${getSatuan(product.name)}',
                           imageUrl: product.imageUrl,
                           onTap: () {
                             Provider.of<OrderProvider>(context, listen: false)
@@ -302,7 +309,8 @@ class _HomePageState extends State<HomePage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => ProductDetailPage(product: product),
+                                builder: (context) =>
+                                    ProductDetailPage(product: product),
                               ),
                             );
                           },
@@ -392,7 +400,8 @@ class _HomePageState extends State<HomePage> {
                               style: TextStyle(color: Colors.white),
                             ),
                             style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: Colors.white, width: 2),
+                              side: const BorderSide(
+                                  color: Colors.white, width: 2),
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
@@ -581,4 +590,3 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
-
