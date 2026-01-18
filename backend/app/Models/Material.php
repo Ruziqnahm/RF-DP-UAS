@@ -12,7 +12,7 @@ class Material extends Model
     protected $fillable = [
         'product_id',
         'name',
-        'price_per_meter',  // Pastikan ada
+        'price_per_meter',  
         'price_multiplier',
         'description',
         'is_active',
