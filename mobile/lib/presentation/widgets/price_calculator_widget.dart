@@ -142,8 +142,8 @@ class PriceCalculatorWidget extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
                           'TOTAL BAYAR',
@@ -153,6 +153,7 @@ class PriceCalculatorWidget extends StatelessWidget {
                             color: Colors.white,
                           ),
                         ),
+                        const SizedBox(height: 8),
                         Text(
                           'Rp ${_formatPrice(provider.totalPrice)}',
                           style: const TextStyle(
@@ -160,6 +161,8 @@ class PriceCalculatorWidget extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),

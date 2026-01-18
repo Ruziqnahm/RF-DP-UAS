@@ -266,37 +266,42 @@ class OrderProvider with ChangeNotifier {
     }
 
     int subtotal = 0;
-    
-    // Kalkulasi berdasarkan jenis produk
-    if (_selectedProduct!.name.toLowerCase().contains('banner')) {
+    final productName = _selectedProduct!.name.toLowerCase();
+
+    if (productName.contains('banner')) {
       // Banner: Rp 20.000/Meter (dihitung dari luas dalam meter persegi)
       double area = _specification.getArea(); // dalam m²
-      double linearMeter = area; // bisa disesuaikan dengan lebar standar
-      subtotal = (_selectedProduct!.basePrice * linearMeter * _specification.quantity).round();
-      
-    } else if (_selectedProduct!.name.toLowerCase().contains('fancy') || 
-               _selectedProduct!.name.toLowerCase().contains('paper')) {
-      // Fancy Paper: Rp 25.000/Lembar
-      subtotal = _selectedProduct!.basePrice * _specification.quantity;
-      
-    } else if (_selectedProduct!.name.toLowerCase().contains('kartu')) {
+      subtotal = (_selectedProduct!.basePrice * area * _specification.quantity).round();
+    } else if (productName.contains('stiker vinyl')) {
+      // Stiker Vinyl: harga berdasarkan ukuran
+      String size = _specification.size ?? '';
+      int base = _selectedProduct!.basePrice;
+      if (size == 'A4') {
+        subtotal = base * _specification.quantity;
+      } else if (size == 'A3') {
+        subtotal = (base * 2) * _specification.quantity; // A3 = 2x A4
+      } else if (size == 'A5') {
+        subtotal = (base ~/ 2) * _specification.quantity; // A5 = 1/2 A4
+      } else if (size == 'Custom') {
+        // Custom: hitung per m² (asumsi input customWidth & customHeight dalam cm, konversi ke m)
+        double width = (_specification.customWidth ?? 0) / 100;
+        double height = (_specification.customHeight ?? 0) / 100;
+        double area = width * height;
+        subtotal = (base * area * _specification.quantity).round();
+      } else {
+        subtotal = base * _specification.quantity;
+      }
+    } else if (productName.contains('kartu')) {
       // Kartu Nama: Rp 30.000/pack
       subtotal = _selectedProduct!.basePrice * _specification.quantity;
-      
-    } else if (_selectedProduct!.name.toLowerCase().contains('uv')) {
+    } else if (productName.contains('uv')) {
       // UV Printing: Rp 15.000/pack
       subtotal = _selectedProduct!.basePrice * _specification.quantity;
-      
     } else {
       // Default: harga base x quantity
       subtotal = _selectedProduct!.basePrice * _specification.quantity;
     }
-    
-    // Biaya urgent +30%
-    if (_specification.isUrgent) {
-      subtotal = (subtotal * 1.3).round();
-    }
-    
+
     _totalPrice = subtotal;
     notifyListeners();
   }
