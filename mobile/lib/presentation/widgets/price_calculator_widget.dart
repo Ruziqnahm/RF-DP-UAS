@@ -10,7 +10,7 @@ class PriceCalculatorWidget extends StatelessWidget {
     return Consumer<OrderProvider>(
       builder: (context, provider, child) {
         final isComplete = provider.specification.isComplete();
-        
+
         return Card(
           elevation: 4,
           shape: RoundedRectangleBorder(
@@ -56,7 +56,6 @@ class PriceCalculatorWidget extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 20),
-                
                 if (!isComplete) ...[
                   Center(
                     child: Column(
@@ -86,7 +85,7 @@ class PriceCalculatorWidget extends StatelessWidget {
                     icon: Icons.inventory_2,
                   ),
                   const SizedBox(height: 12),
-                  
+
                   if (provider.finishingCost > 0) ...[
                     _buildPriceRow(
                       'Biaya Finishing',
@@ -95,7 +94,7 @@ class PriceCalculatorWidget extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                   ],
-                  
+
                   _buildPriceRow(
                     'Jumlah',
                     provider.specification.quantity,
@@ -103,17 +102,17 @@ class PriceCalculatorWidget extends StatelessWidget {
                     isQuantity: true,
                   ),
                   const SizedBox(height: 12),
-                  
+
                   const Divider(thickness: 1),
                   const SizedBox(height: 8),
-                  
+
                   _buildPriceRow(
                     'Subtotal',
                     provider.subtotal,
                     icon: Icons.calculate_outlined,
                     isBold: true,
                   ),
-                  
+
                   if (provider.specification.isUrgent) ...[
                     const SizedBox(height: 12),
                     _buildPriceRow(
@@ -123,11 +122,11 @@ class PriceCalculatorWidget extends StatelessWidget {
                       iconColor: Colors.orange,
                     ),
                   ],
-                  
+
                   const SizedBox(height: 16),
                   const Divider(thickness: 2),
                   const SizedBox(height: 16),
-                  
+
                   // Total
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -167,9 +166,9 @@ class PriceCalculatorWidget extends StatelessWidget {
                       ],
                     ),
                   ),
-                  
+
                   const SizedBox(height: 20),
-                  
+
                   // Estimasi waktu pengerjaan
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -224,7 +223,8 @@ class PriceCalculatorWidget extends StatelessWidget {
                         if (provider.specification.isUrgent) ...[
                           const SizedBox(height: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
                               color: Colors.orange.shade100,
                               borderRadius: BorderRadius.circular(4),
@@ -253,7 +253,7 @@ class PriceCalculatorWidget extends StatelessWidget {
                       ],
                     ),
                   ),
-                  
+
                   // Breakdown detail
                   const SizedBox(height: 16),
                   ExpansionTile(
@@ -264,17 +264,33 @@ class PriceCalculatorWidget extends StatelessWidget {
                     tilePadding: EdgeInsets.zero,
                     childrenPadding: const EdgeInsets.symmetric(vertical: 8),
                     children: [
-                      _buildDetailRow('Luas Area', '${provider.specification.getArea().toStringAsFixed(2)} m²'),
-                      _buildDetailRow('Ukuran', provider.specification.size == 'Custom' 
-                          ? '${provider.specification.customWidth}x${provider.specification.customHeight} cm'
-                          : provider.specification.size ?? '-'),
-                      _buildDetailRow('Material', _getMaterialName(provider)),
-                      _buildDetailRow('Finishing', provider.specification.finishing ?? '-'),
-                      _buildDetailRow('Harga Material/m²', 'Rp ${_formatPrice(_getMaterialPrice(provider))}'),
-                      if (provider.finishingCost > 0)
-                        _buildDetailRow('Harga Finishing/m²', 'Rp ${_formatPrice(_getFinishingPricePerSqm(provider))}'),
-                      _buildDetailRow('Harga/Unit', 'Rp ${_formatPrice((provider.materialCost + provider.finishingCost))}'),
-                      _buildDetailRow('Quantity', '${provider.specification.quantity} pcs'),
+                      _buildDetailRow('Luas Area',
+                          '${provider.specification.getArea().toStringAsFixed(2)} m²'),
+                      _buildDetailRow(
+                          'Ukuran',
+                          provider.specification.size == 'Custom'
+                              ? '${provider.specification.customWidth}x${provider.specification.customHeight} cm'
+                              : provider.specification.size ?? '-'),
+                      _buildDetailRow(
+                          'Material', provider.breakdownMaterialName),
+                      _buildDetailRow('Finishing',
+                          '${provider.specification.finishing ?? '-'} (+Rp ${_formatPrice(provider.breakdownFinishingPrice)})'),
+
+                      // Label dinamis tergantung produk (Banner pake /m2, lain per unit)
+                      if (provider.selectedProduct?.name
+                              .toLowerCase()
+                              .contains('banner') ==
+                          true)
+                        _buildDetailRow('Harga Material/m²',
+                            'Rp ${_formatPrice(provider.breakdownMaterialPriceBase)}')
+                      else
+                        _buildDetailRow('Harga Base Material',
+                            'Rp ${_formatPrice(provider.breakdownMaterialPriceBase)}'),
+
+                      _buildDetailRow('Harga/Unit (Total)',
+                          'Rp ${_formatPrice(provider.breakdownUnitPrice)}'),
+                      _buildDetailRow(
+                          'Quantity', '${provider.specification.quantity} pcs'),
                     ],
                   ),
                 ],
@@ -354,55 +370,28 @@ class PriceCalculatorWidget extends StatelessWidget {
 
   String _formatPrice(int price) {
     return price.toString().replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (Match m) => '${m[1]}.',
-    );
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (Match m) => '${m[1]}.',
+        );
   }
 
   String _formatDate(DateTime date) {
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Agu',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des'
+    ];
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
 
-  String _getMaterialName(OrderProvider provider) {
-    final materials = [
-      {'id': 1, 'name': 'Art Paper'},
-      {'id': 2, 'name': 'Vinyl'},
-      {'id': 3, 'name': 'Flexi'},
-      {'id': 4, 'name': 'Albatros'},
-    ];
-    
-    final material = materials.firstWhere(
-      (m) => m['id'] == provider.specification.materialId,
-      orElse: () => materials[0],
-    );
-    
-    return material['name'] as String;
-  }
-
-  int _getMaterialPrice(OrderProvider provider) {
-    final materials = [
-      {'id': 1, 'price': 15000},
-      {'id': 2, 'price': 25000},
-      {'id': 3, 'price': 35000},
-      {'id': 4, 'price': 20000},
-    ];
-    
-    final material = materials.firstWhere(
-      (m) => m['id'] == provider.specification.materialId,
-      orElse: () => materials[0],
-    );
-    
-    return material['price'] as int;
-  }
-
-  int _getFinishingPricePerSqm(OrderProvider provider) {
-    if (provider.specification.finishing == 'Glossy' || 
-        provider.specification.finishing == 'Doff') {
-      return 3000;
-    } else if (provider.specification.finishing == 'Laminating') {
-      return 5000;
-    }
-    return 0;
-  }
+  // Helper methods removed as logic is now in OrderProvider
 }

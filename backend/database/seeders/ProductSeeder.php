@@ -20,9 +20,9 @@ class ProductSeeder extends Seeder
         Material::query()->delete();
         Product::query()->delete();
 
-        // Product 1: Banner Indoor
+        // Product 1: 
         $banner = Product::create([
-            'name' => 'Banner Indoor',
+            'name' => 'Banner ',
             'category' => 'Banner',
             'description' => 'Banner berkualitas tinggi untuk indoor dengan hasil cetak tajam',
             'base_price' => 20000,

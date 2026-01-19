@@ -211,43 +211,75 @@ class OrderController extends Controller
         $material = $request->material_id ? \App\Models\Material::find($request->material_id) : null;
         $finishing = $request->finishing_id ? \App\Models\Finishing::find($request->finishing_id) : null;
 
-        // Calculate base price
-        $subtotal = $product->base_price * $request->quantity;
+        // 1. Get Base Data
+        $basePrice = $product->base_price;
+        $multiplier = $material ? $material->price_multiplier : 1.0;
         
-        // For banner, calculate by area
-        if (strtolower($product->name) === 'banner indoor' && $request->width && $request->height) {
-            $area = ($request->width / 100) * ($request->height / 100); // Convert cm to m
-            $subtotal = $product->base_price * $area * $request->quantity;
+        // 2. Get Finishing Cost
+        $finishingCostPerUnit = $finishing ? $finishing->additional_price : 0;
+
+        $productName = strtolower($product->name);
+        $materialPricePerUnit = 0;
+
+        // 3. Calculate per Unit Logic
+        if (str_contains($productName, 'banner')) {
+            // Logic Area (m2)
+            $area = 1.0;
+            if ($request->width && $request->height) {
+                // Convert cm to m2
+                $area = ($request->width * $request->height) / 10000;
+                // Min 1 m2 policy
+                if ($area < 1.0) $area = 1.0;
+            }
+            
+            // Base Price is per m2 for Banner
+            $materialPricePerUnit = ($basePrice * $multiplier) * $area;
+            
+        } elseif (str_contains($productName, 'stiker') || str_contains($productName, 'sticker')) {
+             if ($request->width && $request->height) {
+                 // Custom Size Logic
+                 $area = ($request->width * $request->height) / 10000;
+                 // Base Price is usually per A3 Sheet (~0.15 m2)
+                 // Convert to Per m2
+                 $basePerM2 = $basePrice / 0.15; 
+                 $materialPricePerUnit = $basePerM2 * $area * $multiplier;
+             } else {
+                 // Standard Sheet (A3)
+                 $materialPricePerUnit = $basePrice * $multiplier;
+             }
+        } else {
+             // Standard Unit (Kartu Nama, UV, etc)
+             $materialPricePerUnit = $basePrice * $multiplier;
         }
 
-        // Apply material multiplier
-        $materialCost = 0;
-        if ($material) {
-            $materialCost = $subtotal * ($material->price_multiplier - 1);
-        }
+        // 4. Calculate Unit Price Total (Material + Finishing)
+        $unitPrice = $materialPricePerUnit + $finishingCostPerUnit;
 
-        // Add finishing cost
-        $finishingCost = 0;
-        if ($finishing) {
-            $finishingCost = $finishing->additional_price * $request->quantity;
-        }
+        // 5. Calculate Subtotal
+        $subtotal = round($unitPrice * $request->quantity);
 
-        // Calculate total
-        $total = $subtotal + $materialCost + $finishingCost;
+        // 6. Components for Breakdown
+        $totalMaterialCost = round($materialPricePerUnit * $request->quantity);
+        $totalFinishingCost = round($finishingCostPerUnit * $request->quantity);
 
-        // Add urgent fee (30%)
+        // 7. Urgent Fee
+        $urgentFee = 0;
         if ($request->is_urgent) {
-            $total *= 1.3;
+            $urgentFee = round($subtotal * 0.3);
         }
+
+        // 8. Total
+        $total = $subtotal + $urgentFee;
 
         return response()->json([
             'success' => true,
             'message' => 'Price calculated successfully',
             'data' => [
-                'subtotal' => round($subtotal, 2),
-                'material_cost' => round($materialCost, 2),
-                'finishing_cost' => round($finishingCost, 2),
-                'total_price' => round($total, 2),
+                'subtotal' => $subtotal,
+                'material_cost' => $totalMaterialCost,
+                'finishing_cost' => $totalFinishingCost,
+                'urgent_fee' => $urgentFee,
+                'total_price' => $total,
                 'is_urgent' => $request->is_urgent ?? false,
             ]
         ], 200);

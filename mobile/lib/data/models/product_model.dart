@@ -75,21 +75,20 @@ class Product {
     return [
       Product(
         id: 1,
-        name: 'Banner Indoor (Flexi)',
+        name: 'Banner ',
         category: 'Banner',
         basePrice: 20000,
         unit: 'Meter',
-        description:
-            'Banner indoor kualitas high-res. Harga dasar bahan standard.',
+        description: 'Banner  kualitas high-res. Harga dasar bahan standard.',
         imageUrl: 'assets/images/cetak_banner.jpg',
       ),
       Product(
         id: 2,
-        name: 'Stiker Vinyl A3+',
+        name: 'Stiker Vinyl',
         category: 'Stiker',
         basePrice: 15000,
         unit: 'Lembar',
-        description: 'Stiker vinyl anti air ukuran A3+ (32x48 cm).',
+        description: 'Stiker vinyl (32x48 cm).',
         imageUrl: 'assets/images/cetak_stiker_vinyl.jpg',
       ),
       Product(

@@ -40,54 +40,124 @@ class Finishing {
   // dummy data finishing
   static List<Finishing> getDummyFinishings() {
     return [
+      // Banner (ID 1)
       Finishing(
         id: 1,
+        productId: 1,
+        name: 'Tanpa Finishing',
+        additionalPrice: 0,
+        description: 'Potong pas gambar',
+      ),
+      Finishing(
+        id: 2,
         productId: 1,
         name: 'Mata Ayam (Cincin)',
         additionalPrice: 0,
         description: 'Lubang ring di setiap sudut (Gratis)',
       ),
       Finishing(
-        id: 2,
+        id: 3,
         productId: 1,
         name: 'Lipat Saja',
         additionalPrice: 0,
         description: 'Dilipat rapi tanpa ring',
       ),
       Finishing(
-        id: 3,
+        id: 4,
         productId: 1,
         name: 'Selongsong',
         additionalPrice: 5000,
         description: 'Lebihan bahan untuk bambu/kayu',
       ),
-      Finishing(
-        id: 4,
-        productId: 1,
-        name: 'Kolong Kayu',
-        additionalPrice: 10000,
-        description: 'Siap pasang dengan kayu',
-      ),
+
+      // Sticker (ID 2)
       Finishing(
         id: 5,
-        productId: 2, // Sticker
-        name: 'Laminating Glossy',
-        additionalPrice: 5000,
-        description: 'Lapisan mengkilap pelindung gores',
+        productId: 2,
+        name: 'Tanpa Finishing',
+        additionalPrice: 0,
+        description: 'Potong per lembar A3',
       ),
       Finishing(
         id: 6,
-        productId: 2, // Sticker
-        name: 'Laminating Doff',
+        productId: 2,
+        name: 'Kiss Cut',
         additionalPrice: 5000,
-        description: 'Lapisan matte pelindung gores',
+        description: 'Potong bentuk (masih dalam lembaran)',
       ),
       Finishing(
         id: 7,
-        productId: 2, // Sticker
-        name: 'Cutting Putus',
+        productId: 2,
+        name: 'Die Cut (Putus)',
         additionalPrice: 10000,
-        description: 'Potong sesuai bentuk (Die Cut)',
+        description: 'Potong putus sesuai bentuk satuan',
+      ),
+      Finishing(
+        id: 8,
+        productId: 2,
+        name: 'Laminating Glossy',
+        additionalPrice: 5000,
+        description: 'Lapisan mengkilap tahan gores',
+      ),
+      Finishing(
+        id: 9,
+        productId: 2,
+        name: 'Laminating Doff',
+        additionalPrice: 5000,
+        description: 'Lapisan matte elegan',
+      ),
+
+      // Kartu Nama (ID 3)
+      Finishing(
+        id: 10,
+        productId: 3,
+        name: 'Tanpa Finishing',
+        additionalPrice: 0,
+        description: 'Potong kotak standar',
+      ),
+      Finishing(
+        id: 11,
+        productId: 3,
+        name: 'Laminating Glossy 1 Sisi',
+        additionalPrice: 15000,
+        description: 'Per box',
+      ),
+      Finishing(
+        id: 12,
+        productId: 3,
+        name: 'Laminating Doff 1 Sisi',
+        additionalPrice: 15000,
+        description: 'Per box',
+      ),
+      Finishing(
+        id: 13,
+        productId: 3,
+        name: 'Rounded Corner',
+        additionalPrice: 5000,
+        description: 'Sudut melengkung',
+      ),
+
+      // UV Printing (ID 4)
+      Finishing(
+        id: 14,
+        productId: 4,
+        name: 'Tanpa Finishing',
+        additionalPrice: 0,
+        description: 'Cetak saja',
+      ),
+      Finishing(
+        id: 15,
+        productId: 4,
+        name: 'Varnish Glossy',
+        additionalPrice: 20000,
+        description: 'Lapisan bening mengkilap',
+      ),
+      Finishing(
+        id: 16,
+        productId: 4,
+        name: 'Emboss (Timbul)',
+        additionalPrice: 30000,
+        description: 'Cetak timbul 3D',
       ),
     ];
   }

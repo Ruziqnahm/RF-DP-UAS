@@ -10,6 +10,7 @@ import '../../core/services/pdf_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/product_model.dart';
 import '../../data/models/material_model.dart';
+import '../../data/models/finishing_model.dart';
 import '../providers/order_provider.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/price_calculator_widget.dart';
@@ -39,8 +40,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     if (name.contains('stiker vinyl') || name.contains('uv printing')) {
       return ['A3', 'A4', 'A5', 'Custom'];
     }
-    // Logika untuk Banner Indoor (Hanya Custom)
-    else if (name.contains('banner indoor')) {
+    // Logika untuk Banner  (Hanya Custom)
+    else if (name.contains('banner')) {
       return ['Custom'];
     }
     // Logika untuk Kartu Nama (Hanya Custom)
@@ -53,12 +54,49 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     }
   }
 
-  final List<String> finishings = [
-    'Glossy',
-    'Doff',
-    'Laminating',
-    'Tanpa Finishing'
-  ];
+  // Static list removed, using dynamic data from Finishing model
+
+  // Static list removed, using dynamic data from Finishing model
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize provider with safe defaults after build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeOrderDefaults();
+    });
+  }
+
+  void _initializeOrderDefaults() {
+    final provider = Provider.of<OrderProvider>(context, listen: false);
+    provider.setProduct(widget.product);
+
+    // 1. Set Default Size
+    final sizes = getSizesForProduct();
+    if (sizes.isNotEmpty) {
+      provider.setSize(sizes.first);
+    }
+
+    // 2. Set Default Material (Filter by Product ID)
+    final allMaterials = PrintMaterial.getDummyMaterials();
+    final validMaterials =
+        allMaterials.where((m) => m.productId == widget.product.id).toList();
+
+    if (validMaterials.isNotEmpty) {
+      provider.setMaterial(validMaterials.first.id);
+    }
+
+    // 3. Set Default Finishing (Dynamic)
+    final allFinishings = Finishing.getDummyFinishings();
+    final validFinishings =
+        allFinishings.where((f) => f.productId == widget.product.id).toList();
+
+    if (validFinishings.isNotEmpty) {
+      provider.setFinishing(validFinishings.first.name);
+    } else {
+      provider.setFinishing('Tanpa Finishing');
+    }
+  }
 
   @override
   void dispose() {
@@ -284,13 +322,41 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             labelText: 'Bahan',
             prefixIcon: Icons.texture,
           ),
+          isExpanded: true, // Fix overflow
           hint: Text('Pilih bahan'),
-          items: materials.map((material) {
-            return DropdownMenuItem(
-              value: material.id,
-              child: Text('${material.name} (Rp ${material.pricePerSqm}/m²)'),
-            );
-          }).toList(),
+          items: materials
+              .map((material) {
+                // Filter materials by product ID first (safety check)
+                if (material.productId != widget.product.id) {
+                  return null;
+                }
+
+                // Calculate dynamic price based on product base price
+                int estimatedPrice =
+                    (widget.product.basePrice * material.priceMultiplier)
+                        .round();
+
+                // Determine unit suffix
+                String unit = '/pcs';
+                final pName = widget.product.name.toLowerCase();
+                if (pName.contains('banner'))
+                  unit = '/m²';
+                else if (pName.contains('stiker'))
+                  unit = '/lbr A3';
+                else if (pName.contains('kartu')) unit = '/box';
+
+                return DropdownMenuItem(
+                  value: material.id,
+                  child: Text(
+                    '${material.name} (Rp ${estimatedPrice}$unit)',
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    style: TextStyle(fontSize: 14),
+                  ),
+                );
+              })
+              .whereType<DropdownMenuItem<int>>()
+              .toList(), // Filter out nulls
           onChanged: (value) {
             if (value != null) provider.setMaterial(value);
           },
@@ -316,9 +382,25 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             labelText: 'Finishing',
             prefixIcon: Icons.auto_awesome,
           ),
+          isExpanded: true,
           hint: Text('Pilih finishing'),
-          items: finishings.map((finishing) {
-            return DropdownMenuItem(value: finishing, child: Text(finishing));
+          items: Finishing.getDummyFinishings()
+              .where((f) => f.productId == widget.product.id)
+              .map((finishing) {
+            String priceText = '';
+            if (finishing.additionalPrice > 0) {
+              priceText = ' (+Rp ${finishing.additionalPrice.round()})';
+            }
+
+            return DropdownMenuItem(
+              value: finishing.name,
+              child: Text(
+                '${finishing.name}$priceText',
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                style: TextStyle(fontSize: 14),
+              ),
+            );
           }).toList(),
           onChanged: (value) {
             if (value != null) provider.setFinishing(value);
@@ -719,7 +801,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       // 2. SEND WHATSAPP MESSAGE (optional)
       final message = provider.generateWhatsAppMessage();
       final encodedMessage = Uri.encodeComponent(message);
-      final phoneNumber = '6285156963404'; // Nomor WA admin
+      final phoneNumber = '6285664202185'; // Nomor WA admin
       final whatsappUrl = 'https://wa.me/$phoneNumber?text=$encodedMessage';
 
       // 3. SHOW SUCCESS DIALOG
