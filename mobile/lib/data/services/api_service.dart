@@ -9,10 +9,10 @@ class ApiService {
   // Untuk testing lokal: http://192.168.x.x:8000/api
   // Untuk production: https://yourdomain.com/api
   static const String baseUrl = 'http://192.168.1.100:8000/api';
-  
+
   // Alternative untuk emulator Android
   // static const String baseUrl = 'http://10.0.2.2:8000/api';
-  
+
   // Headers
   static Map<String, String> get headers => {
         'Content-Type': 'application/json',
@@ -20,14 +20,16 @@ class ApiService {
       };
 
   // ============ PRODUCTS API ============
-  
+
   /// Fetch all products with materials and finishings
   static Future<List<Product>> getProducts() async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/products'),
-        headers: headers,
-      ).timeout(const Duration(seconds: 10));
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl/products'),
+            headers: headers,
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -50,10 +52,12 @@ class ApiService {
   /// Fetch single product by ID
   static Future<Product?> getProduct(int id) async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/products/$id'),
-        headers: headers,
-      ).timeout(const Duration(seconds: 10));
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl/products/$id'),
+            headers: headers,
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -69,40 +73,49 @@ class ApiService {
   }
 
   /// Fetch materials for a specific product
-  static Future<List<Material>> getMaterialsForProduct(int productId) async {
+  static Future<List<PrintMaterial>> getMaterialsForProduct(
+      int productId) async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/products/$productId/materials'),
-        headers: headers,
-      ).timeout(const Duration(seconds: 10));
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl/products/$productId/materials'),
+            headers: headers,
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true) {
           final List materialsJson = data['data'];
-          return materialsJson.map((json) => Material.fromJson(json)).toList();
+          return materialsJson
+              .map((json) => PrintMaterial.fromJson(json))
+              .toList();
         }
       }
       return [];
     } catch (e) {
       print('Error fetching materials: $e');
-      return Material.getDummyMaterials();
+      return PrintMaterial.getDummyMaterials();
     }
   }
 
   /// Fetch finishings for a specific product
   static Future<List<Finishing>> getFinishingsForProduct(int productId) async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/products/$productId/finishings'),
-        headers: headers,
-      ).timeout(const Duration(seconds: 10));
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl/products/$productId/finishings'),
+            headers: headers,
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true) {
           final List finishingsJson = data['data'];
-          return finishingsJson.map((json) => Finishing.fromJson(json)).toList();
+          return finishingsJson
+              .map((json) => Finishing.fromJson(json))
+              .toList();
         }
       }
       return [];
@@ -113,7 +126,7 @@ class ApiService {
   }
 
   // ============ ORDERS API ============
-  
+
   /// Create a new order
   static Future<Map<String, dynamic>> createOrder({
     required int productId,
@@ -154,14 +167,16 @@ class ApiService {
         if (customerNotes != null) 'customer_notes': customerNotes,
       };
 
-      final response = await http.post(
-        Uri.parse('$baseUrl/orders'),
-        headers: headers,
-        body: json.encode(body),
-      ).timeout(const Duration(seconds: 15));
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/orders'),
+            headers: headers,
+            body: json.encode(body),
+          )
+          .timeout(const Duration(seconds: 15));
 
       final data = json.decode(response.body);
-      
+
       if (response.statusCode == 201 && data['success'] == true) {
         return {
           'success': true,
@@ -184,17 +199,20 @@ class ApiService {
   }
 
   /// Fetch orders (optionally filter by customer phone)
-  static Future<List<Map<String, dynamic>>> getOrders({String? customerPhone}) async {
+  static Future<List<Map<String, dynamic>>> getOrders(
+      {String? customerPhone}) async {
     try {
       String url = '$baseUrl/orders';
       if (customerPhone != null) {
         url += '?customer_phone=$customerPhone';
       }
 
-      final response = await http.get(
-        Uri.parse(url),
-        headers: headers,
-      ).timeout(const Duration(seconds: 10));
+      final response = await http
+          .get(
+            Uri.parse(url),
+            headers: headers,
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -230,11 +248,13 @@ class ApiService {
         'is_urgent': isUrgent,
       };
 
-      final response = await http.post(
-        Uri.parse('$baseUrl/calculate-price'),
-        headers: headers,
-        body: json.encode(body),
-      ).timeout(const Duration(seconds: 10));
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/calculate-price'),
+            headers: headers,
+            body: json.encode(body),
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);

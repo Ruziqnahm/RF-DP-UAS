@@ -115,7 +115,7 @@ class ProductCard extends StatelessWidget {
                     Row(
                       children: [
                         const Icon(
-                          Icons.tag, // Ganti icon uang jadi tag harga biar simpel
+                          Icons.price_change, // Ganti icon uang jadi tag harga biar simpel
                           size: 14,
                           color: Colors.green,
                         ),

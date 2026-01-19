@@ -10,15 +10,14 @@ class SplashPage extends StatefulWidget {
 }
 
 class _SplashPageState extends State<SplashPage> {
-  
- @override
+  @override
   void initState() {
     super.initState();
-    
+
     // delay 2 detik lalu pindah ke home
     Timer(const Duration(seconds: 2), () {
       // Cek apakah widget masih aktif di layar
-      if (mounted) { 
+      if (mounted) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const HomePage()),
@@ -26,6 +25,7 @@ class _SplashPageState extends State<SplashPage> {
       }
     });
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -34,22 +34,6 @@ class _SplashPageState extends State<SplashPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // logo
-            Image.asset(
-              'assets/logo/rf_logo.png',
-              width: 180,
-              height: 180,
-              errorBuilder: (context, error, stackTrace) {
-                return Icon(
-                  Icons.print,
-                  size: 100,
-                  color: Colors.white,
-                );
-              },
-            ),
-            
-            SizedBox(height: 24),
-            
             Text(
               'RF Digital Printing',
               style: TextStyle(
@@ -58,9 +42,7 @@ class _SplashPageState extends State<SplashPage> {
                 color: Colors.white,
               ),
             ),
-            
             SizedBox(height: 8),
-            
             Text(
               'Solusi Cetak Digital Terpercaya',
               style: TextStyle(
@@ -68,9 +50,7 @@ class _SplashPageState extends State<SplashPage> {
                 color: Colors.white70,
               ),
             ),
-            
             SizedBox(height: 48),
-            
             CircularProgressIndicator(
               color: Colors.white,
             ),

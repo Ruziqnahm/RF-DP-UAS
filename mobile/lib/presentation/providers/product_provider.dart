@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart' hide Material;
+import 'package:flutter/material.dart';
 import '../../data/models/product_model.dart';
 import '../../data/models/material_model.dart';
 import '../../data/models/finishing_model.dart';
@@ -26,7 +26,7 @@ class ProductProvider with ChangeNotifier {
     } catch (e) {
       _error = 'Gagal memuat produk dari server, menggunakan data lokal';
       print('Fetch products error: $e');
-      
+
       // Fallback ke dummy data
       _products = Product.getDummyProducts();
       print('✓ Using local dummy data: ${_products.length} items');
@@ -37,14 +37,15 @@ class ProductProvider with ChangeNotifier {
   }
 
   // Fetch materials for a specific product
-  Future<List<Material>> getMaterialsForProduct(int productId) async {
+  Future<List<PrintMaterial>> getMaterialsForProduct(int productId) async {
     try {
       final materials = await ApiService.getMaterialsForProduct(productId);
-      print('✓ Materials loaded for product $productId: ${materials.length} items');
+      print(
+          '✓ Materials loaded for product $productId: ${materials.length} items');
       return materials;
     } catch (e) {
       print('Error fetching materials: $e');
-      return Material.getDummyMaterials();
+      return PrintMaterial.getDummyMaterials();
     }
   }
 
@@ -52,7 +53,8 @@ class ProductProvider with ChangeNotifier {
   Future<List<Finishing>> getFinishingsForProduct(int productId) async {
     try {
       final finishings = await ApiService.getFinishingsForProduct(productId);
-      print('✓ Finishings loaded for product $productId: ${finishings.length} items');
+      print(
+          '✓ Finishings loaded for product $productId: ${finishings.length} items');
       return finishings;
     } catch (e) {
       print('Error fetching finishings: $e');

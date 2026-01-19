@@ -9,7 +9,8 @@ import '../../core/constants/app_strings.dart';
 import '../../core/services/pdf_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/product_model.dart';
-import '../../data/models/material_model.dart' as mat;
+import '../../data/models/material_model.dart';
+import '../../data/models/finishing_model.dart';
 import '../providers/order_provider.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/price_calculator_widget.dart';
@@ -18,7 +19,7 @@ import '../widgets/file_preview_widget.dart';
 class ProductDetailPage extends StatefulWidget {
   final Product product;
 
-  const ProductDetailPage({Key? key, required this.product}) : super(key: key);
+  const ProductDetailPage({super.key, required this.product});
 
   @override
   State<ProductDetailPage> createState() => _ProductDetailPageState();
@@ -32,15 +33,15 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   final _formKey = GlobalKey<FormState>();
   final ImagePicker _picker = ImagePicker();
   bool _isSubmittingOrder = false;
-  
+
   List<String> getSizesForProduct() {
     final name = widget.product.name.toLowerCase();
     // Logika untuk Stiker Vinyl dan UV Printing
     if (name.contains('stiker vinyl') || name.contains('uv printing')) {
       return ['A3', 'A4', 'A5', 'Custom'];
     }
-    // Logika untuk Banner Indoor (Hanya Custom)
-    else if (name.contains('banner indoor')) {
+    // Logika untuk Banner  (Hanya Custom)
+    else if (name.contains('banner')) {
       return ['Custom'];
     }
     // Logika untuk Kartu Nama (Hanya Custom)
@@ -52,8 +53,51 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       return ['Custom'];
     }
   }
-  final List<String> finishings = ['Glossy', 'Doff', 'Laminating', 'Tanpa Finishing'];
-  
+
+  // Static list removed, using dynamic data from Finishing model
+
+  // Static list removed, using dynamic data from Finishing model
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize provider with safe defaults after build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeOrderDefaults();
+    });
+  }
+
+  void _initializeOrderDefaults() {
+    final provider = Provider.of<OrderProvider>(context, listen: false);
+    provider.setProduct(widget.product);
+
+    // 1. Set Default Size
+    final sizes = getSizesForProduct();
+    if (sizes.isNotEmpty) {
+      provider.setSize(sizes.first);
+    }
+
+    // 2. Set Default Material (Filter by Product ID)
+    final allMaterials = PrintMaterial.getDummyMaterials();
+    final validMaterials =
+        allMaterials.where((m) => m.productId == widget.product.id).toList();
+
+    if (validMaterials.isNotEmpty) {
+      provider.setMaterial(validMaterials.first.id);
+    }
+
+    // 3. Set Default Finishing (Dynamic)
+    final allFinishings = Finishing.getDummyFinishings();
+    final validFinishings =
+        allFinishings.where((f) => f.productId == widget.product.id).toList();
+
+    if (validFinishings.isNotEmpty) {
+      provider.setFinishing(validFinishings.first.name);
+    } else {
+      provider.setFinishing('Tanpa Finishing');
+    }
+  }
+
   @override
   void dispose() {
     _widthController.dispose();
@@ -76,7 +120,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildProductImage(),
-                
                 Padding(
                   padding: EdgeInsets.all(16),
                   child: Form(
@@ -86,46 +129,48 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                       children: [
                         Text(
                           widget.product.description,
-                          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                          style:
+                              TextStyle(fontSize: 14, color: Colors.grey[600]),
                         ),
-                        
+
                         SizedBox(height: 24),
-                        
+
                         Text(
                           AppStrings.specification,
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold),
                         ),
-                        
+
                         SizedBox(height: 16),
-                        
+
                         _buildSizeDropdown(orderProvider),
                         SizedBox(height: 16),
-                        
+
                         if (orderProvider.specification.size == 'Custom')
                           _buildCustomSizeInput(orderProvider),
-                        
+
                         _buildMaterialDropdown(orderProvider),
                         SizedBox(height: 16),
-                        
+
                         _buildFinishingDropdown(orderProvider),
                         SizedBox(height: 16),
-                        
+
                         _buildQuantityInput(orderProvider),
                         SizedBox(height: 16),
-                        
+
                         _buildNotesInput(orderProvider),
                         SizedBox(height: 24),
-                        
+
                         // Price Calculator Widget dengan breakdown detail
                         PriceCalculatorWidget(),
                         SizedBox(height: 24),
-                        
+
                         _buildUploadSection(orderProvider),
                         SizedBox(height: 24),
-                        
+
                         _buildDeliverySection(orderProvider),
                         SizedBox(height: 24),
-                        
+
                         _buildSendButton(orderProvider),
                         SizedBox(height: 32),
                       ],
@@ -143,7 +188,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   Widget _buildProductImage() {
     // Cek apakah gambar dari internet atau lokal (assets)
     bool isNetworkImage = widget.product.imageUrl.startsWith('http');
-    
+
     return isNetworkImage
         ? Image.network(
             widget.product.imageUrl,
@@ -196,7 +241,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           onChanged: (value) {
             if (value != null) provider.setSize(value);
           },
-          validator: (value) => value == null ? AppStrings.errorEmptyField : null,
+          validator: (value) =>
+              value == null ? AppStrings.errorEmptyField : null,
         ),
       ],
     );
@@ -218,11 +264,13 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                 keyboardType: TextInputType.number,
                 onChanged: (value) {
                   final width = double.tryParse(value);
-                  provider.setCustomSize(width, provider.specification.customHeight);
+                  provider.setCustomSize(
+                      width, provider.specification.customHeight);
                 },
                 validator: (value) {
                   if (value == null || value.isEmpty) return 'Wajib diisi';
-                  if (double.tryParse(value) == null) return 'Angka tidak valid';
+                  if (double.tryParse(value) == null)
+                    return 'Angka tidak valid';
                   return null;
                 },
               ),
@@ -239,11 +287,13 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                 keyboardType: TextInputType.number,
                 onChanged: (value) {
                   final height = double.tryParse(value);
-                  provider.setCustomSize(provider.specification.customWidth, height);
+                  provider.setCustomSize(
+                      provider.specification.customWidth, height);
                 },
                 validator: (value) {
                   if (value == null || value.isEmpty) return 'Wajib diisi';
-                  if (double.tryParse(value) == null) return 'Angka tidak valid';
+                  if (double.tryParse(value) == null)
+                    return 'Angka tidak valid';
                   return null;
                 },
               ),
@@ -256,8 +306,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   }
 
   Widget _buildMaterialDropdown(OrderProvider provider) {
-    final materials = mat.Material.getDummyMaterials();
-    
+    final materials = PrintMaterial.getDummyMaterials();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -272,17 +322,46 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             labelText: 'Bahan',
             prefixIcon: Icons.texture,
           ),
+          isExpanded: true, // Fix overflow
           hint: Text('Pilih bahan'),
-          items: materials.map((material) {
-            return DropdownMenuItem(
-              value: material.id,
-              child: Text('${material.name} (Rp ${material.pricePerSqm}/m²)'),
-            );
-          }).toList(),
+          items: materials
+              .map((material) {
+                // Filter materials by product ID first (safety check)
+                if (material.productId != widget.product.id) {
+                  return null;
+                }
+
+                // Calculate dynamic price based on product base price
+                int estimatedPrice =
+                    (widget.product.basePrice * material.priceMultiplier)
+                        .round();
+
+                // Determine unit suffix
+                String unit = '/pcs';
+                final pName = widget.product.name.toLowerCase();
+                if (pName.contains('banner'))
+                  unit = '/m²';
+                else if (pName.contains('stiker'))
+                  unit = '/lbr A3';
+                else if (pName.contains('kartu')) unit = '/box';
+
+                return DropdownMenuItem(
+                  value: material.id,
+                  child: Text(
+                    '${material.name} (Rp ${estimatedPrice}$unit)',
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    style: TextStyle(fontSize: 14),
+                  ),
+                );
+              })
+              .whereType<DropdownMenuItem<int>>()
+              .toList(), // Filter out nulls
           onChanged: (value) {
             if (value != null) provider.setMaterial(value);
           },
-          validator: (value) => value == null ? AppStrings.errorEmptyField : null,
+          validator: (value) =>
+              value == null ? AppStrings.errorEmptyField : null,
         ),
       ],
     );
@@ -303,14 +382,31 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             labelText: 'Finishing',
             prefixIcon: Icons.auto_awesome,
           ),
+          isExpanded: true,
           hint: Text('Pilih finishing'),
-          items: finishings.map((finishing) {
-            return DropdownMenuItem(value: finishing, child: Text(finishing));
+          items: Finishing.getDummyFinishings()
+              .where((f) => f.productId == widget.product.id)
+              .map((finishing) {
+            String priceText = '';
+            if (finishing.additionalPrice > 0) {
+              priceText = ' (+Rp ${finishing.additionalPrice.round()})';
+            }
+
+            return DropdownMenuItem(
+              value: finishing.name,
+              child: Text(
+                '${finishing.name}$priceText',
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                style: TextStyle(fontSize: 14),
+              ),
+            );
           }).toList(),
           onChanged: (value) {
             if (value != null) provider.setFinishing(value);
           },
-          validator: (value) => value == null ? AppStrings.errorEmptyField : null,
+          validator: (value) =>
+              value == null ? AppStrings.errorEmptyField : null,
         ),
       ],
     );
@@ -338,7 +434,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             provider.setQuantity(qty);
           },
           validator: (value) {
-            if (value == null || value.isEmpty) return AppStrings.errorEmptyField;
+            if (value == null || value.isEmpty)
+              return AppStrings.errorEmptyField;
             final qty = int.tryParse(value);
             if (qty == null || qty < 1) return AppStrings.errorMinQuantity;
             return null;
@@ -388,9 +485,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             ),
           ],
         ),
-        
+
         SizedBox(height: 8),
-        
+
         Container(
           padding: EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -411,22 +508,22 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             ],
           ),
         ),
-        
+
         SizedBox(height: 16),
-        
+
         // Preview files with FilePreviewWidget
         if (provider.specification.fileMetadataList.isNotEmpty) ...[
           ...provider.specification.fileMetadataList.asMap().entries.map(
-            (entry) => FilePreviewWidget(
-              filePath: entry.value.path,
-              fileSize: entry.value.size,
-              webFileBytes: entry.value.webBytes,
-              onRemove: () => provider.removeFile(entry.key),
-            ),
-          ),
+                (entry) => FilePreviewWidget(
+                  filePath: entry.value.path,
+                  fileSize: entry.value.size,
+                  webFileBytes: entry.value.webBytes,
+                  onRemove: () => provider.removeFile(entry.key),
+                ),
+              ),
           SizedBox(height: 12),
         ],
-        
+
         // Upload buttons (hide if 3 files)
         if (provider.specification.fileMetadataList.length < 3) ...[
           Column(
@@ -461,7 +558,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   SizedBox(width: 12),
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () => _pickImage(provider, ImageSource.gallery),
+                      onPressed: () =>
+                          _pickImage(provider, ImageSource.gallery),
                       icon: Icon(Icons.photo_library),
                       label: Text('Galeri'),
                       style: OutlinedButton.styleFrom(
@@ -515,17 +613,29 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       lastDate: DateTime.now().add(Duration(days: 60)),
       helpText: 'Pilih Tanggal Selesai',
     );
-    
+
     if (picked != null) {
       provider.setDeliveryDate(picked);
     }
   }
 
   String _formatDate(DateTime date) {
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Agu',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des'
+    ];
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
-
 
   Widget _buildSendButton(OrderProvider provider) {
     return CustomButton(
@@ -548,17 +658,17 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         allowMultiple: false,
         withData: kIsWeb, // Load bytes for web
       );
-      
+
       if (result != null) {
         final file = result.files.first;
         final filePath = kIsWeb ? file.name : file.path!;
-        
+
         // Add file with validation
         final error = await provider.addFile(
           filePath,
           webBytes: kIsWeb ? file.bytes : null,
         );
-        
+
         if (error != null) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -594,17 +704,17 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   Future<void> _pickImage(OrderProvider provider, ImageSource source) async {
     try {
       final XFile? image = await _picker.pickImage(source: source);
-      
+
       if (image != null) {
         // Read bytes for web
         final bytes = kIsWeb ? await image.readAsBytes() : null;
-        
+
         // Add with validation
         final error = await provider.addFile(
           image.path,
           webBytes: bytes,
         );
-        
+
         if (error != null) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -645,34 +755,34 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       );
       return;
     }
-    
+
     if (provider.specification.filePaths.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Minimal upload 1 file design')),
       );
       return;
     }
-    
+
     // Show confirmation dialog
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => _buildOrderConfirmationDialog(provider),
     );
-    
+
     if (confirmed != true) return;
-    
+
     // Set loading state
     setState(() {
       _isSubmittingOrder = true;
     });
-    
+
     try {
       // 1. SAVE TO DATABASE FIRST
       final success = await provider.createOrder(
         productId: widget.product.id,
         materialId: provider.specification.materialId!,
       );
-      
+
       if (!success) {
         if (mounted) {
           setState(() {
@@ -687,19 +797,19 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         }
         return;
       }
-      
+
       // 2. SEND WHATSAPP MESSAGE (optional)
       final message = provider.generateWhatsAppMessage();
       final encodedMessage = Uri.encodeComponent(message);
-      final phoneNumber = '6285156963404'; // Nomor WA admin
+      final phoneNumber = '6285664202185'; // Nomor WA admin
       final whatsappUrl = 'https://wa.me/$phoneNumber?text=$encodedMessage';
-      
+
       // 3. SHOW SUCCESS DIALOG
       if (mounted) {
         setState(() {
           _isSubmittingOrder = false;
         });
-        
+
         final goToWhatsApp = await showDialog<bool>(
           context: context,
           barrierDismissible: false,
@@ -758,26 +868,27 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             ],
           ),
         );
-        
+
         // Launch WhatsApp if user wants
         if (goToWhatsApp == true) {
           _launchWhatsApp(whatsappUrl);
         }
-        
+
         // 4. NAVIGATE TO ORDER HISTORY
         if (mounted) {
           // Reset form
           provider.reset();
-          
+
           // Show success message
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('✅ Pesanan berhasil dibuat! Cek di Riwayat Pesanan'),
+              content:
+                  Text('✅ Pesanan berhasil dibuat! Cek di Riwayat Pesanan'),
               backgroundColor: Colors.green,
               duration: Duration(seconds: 3),
             ),
           );
-          
+
           // Navigate back to home
           Navigator.pop(context);
         }
@@ -798,12 +909,12 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   }
 
   Widget _buildOrderConfirmationDialog(OrderProvider provider) {
-    final materials = mat.Material.getDummyMaterials();
+    final materials = PrintMaterial.getDummyMaterials();
     final selectedMaterial = materials.firstWhere(
       (m) => m.id == provider.specification.materialId,
       orElse: () => materials.first,
     );
-    
+
     return AlertDialog(
       title: const Text('Konfirmasi Pesanan'),
       content: SingleChildScrollView(
@@ -811,15 +922,17 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Produk: ${widget.product.name}', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text('Produk: ${widget.product.name}',
+                style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Text('Material: ${selectedMaterial.name}'),
             Text('Kuantitas: ${provider.specification.quantity} pcs'),
             const Divider(),
-            Text('Total: Rp ${_formatPrice(provider.totalPrice)}', 
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Text('Total: Rp ${_formatPrice(provider.totalPrice)}',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 16),
-            const Text('Export Invoice:', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text('Export Invoice:',
+                style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -862,7 +975,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     );
   }
 
-  Future<void> _exportPdf(OrderProvider provider, mat.Material material) async {
+  Future<void> _exportPdf(
+      OrderProvider provider, PrintMaterial material) async {
     try {
       await PdfService.generateOrderPdf(
         productName: widget.product.name,
@@ -871,12 +985,12 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         basePrice: widget.product.basePrice.toDouble(),
         materialPrice: material.pricePerSqm.toDouble(),
         totalPrice: provider.totalPrice.toDouble(),
-        customerName: 'Customer',  // Bisa diganti dengan input form
-        customerPhone: '0812XXXXXXXX',  // Bisa diganti dengan input form
+        customerName: 'Customer', // Bisa diganti dengan input form
+        customerPhone: '0812XXXXXXXX', // Bisa diganti dengan input form
         notes: provider.specification.notes,
         filePaths: provider.specification.filePaths,
       );
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('PDF berhasil dibuat!')),
       );
@@ -887,7 +1001,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     }
   }
 
-  Future<void> _exportTxt(OrderProvider provider, mat.Material material) async {
+  Future<void> _exportTxt(
+      OrderProvider provider, PrintMaterial material) async {
     try {
       await PdfService.generateOrderTxt(
         productName: widget.product.name,
@@ -896,12 +1011,12 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         basePrice: widget.product.basePrice.toDouble(),
         materialPrice: material.pricePerSqm.toDouble(),
         totalPrice: provider.totalPrice.toDouble(),
-        customerName: 'Customer',  // Bisa diganti dengan input form
-        customerPhone: '0812XXXXXXXX',  // Bisa diganti dengan input form
+        customerName: 'Customer', // Bisa diganti dengan input form
+        customerPhone: '0812XXXXXXXX', // Bisa diganti dengan input form
         notes: provider.specification.notes,
         filePaths: provider.specification.filePaths,
       );
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('File TXT berhasil dibuat!')),
       );
@@ -914,7 +1029,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
   Future<void> _launchWhatsApp(String url) async {
     final uri = Uri.parse(url);
-    
+
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
@@ -926,8 +1041,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
   String _formatPrice(int price) {
     return price.toString().replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (Match m) => '${m[1]}.',
-    );
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (Match m) => '${m[1]}.',
+        );
   }
 }

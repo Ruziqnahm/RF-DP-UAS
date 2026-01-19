@@ -8,7 +8,7 @@ plugins {
 android {
     namespace = "id.rfdigitalprinting.rf_digital_printing"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "29.0.14033849"
+    // ndkVersion = "29.0.14033849"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -24,10 +24,12 @@ android {
         applicationId = "id.rfdigitalprinting.rf_digital_printing"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        // For more information, see: https://flutter.dev/to/review-gradle-config.
+        minSdk = 21 // Raised to 21 for better compatibility
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        multiDexEnabled = true
     }
 
     buildTypes {
