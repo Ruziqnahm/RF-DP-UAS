@@ -122,10 +122,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       ),
       child: Row(
         children: [
-          _buildStatCard('Pending', pending, Colors.orange, Icons.hourglass_empty),
+          _buildStatCard(
+              'Pending', pending, Colors.orange, Icons.hourglass_empty),
           _buildStatCard('Proses', processing, Colors.blue, Icons.sync),
           _buildStatCard('Cetak', printing, Colors.purple, Icons.print),
-          _buildStatCard('Selesai', completed, Colors.green, Icons.check_circle),
+          _buildStatCard(
+              'Selesai', completed, Colors.green, Icons.check_circle),
         ],
       ),
     );
@@ -210,7 +212,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
   Widget _buildOrderCard(Order order) {
     final needsApproval = order.approvalStatus == 'pending_review';
-    
+    final hasFiles = order.filePaths.isNotEmpty;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 2,
@@ -231,7 +234,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.warning_amber, size: 16, color: Colors.orange[700]),
+                  Icon(Icons.warning_amber,
+                      size: 16, color: Colors.orange[700]),
                   const SizedBox(width: 8),
                   Text(
                     'BUTUH APPROVAL',
@@ -241,6 +245,32 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       color: Colors.orange[900],
                     ),
                   ),
+                  const Spacer(),
+                  if (order.isUrgent)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.red[100],
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.flash_on,
+                              size: 12, color: Colors.red[700]),
+                          const SizedBox(width: 4),
+                          Text(
+                            'URGENT',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.red[900],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -260,25 +290,44 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const SizedBox(height: 4),
                 Text(
-                  '${order.materialName} • ${order.quantity} pcs\nRp ${order.getFormattedPrice()}',
+                  '${order.materialName} • ${order.quantity} pcs',
                   style: const TextStyle(fontSize: 12),
                 ),
+                Text(
+                  'Ukuran: ${order.getFormattedSize()} • Finishing: ${order.finishing}',
+                  style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                ),
                 const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: order.getApprovalStatusColor().withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    order.getApprovalStatusLabel(),
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: order.getApprovalStatusColor(),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: order.getApprovalStatusColor().withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        order.getApprovalStatusLabel(),
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: order.getApprovalStatusColor(),
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Rp ${order.getFormattedPrice()}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -295,7 +344,66 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               );
             },
           ),
-          
+
+          // File attachments preview
+          if (hasFiles)
+            Container(
+              margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue[200]!),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.attach_file, size: 16, color: Colors.blue[700]),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '${order.filePaths.length} file design terlampir',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.blue[900],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  Icon(Icons.chevron_right, size: 16, color: Colors.blue[700]),
+                ],
+              ),
+            ),
+
+          // Customer notes if available
+          if (order.notes != null && order.notes!.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.amber[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.amber[200]!),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.note, size: 16, color: Colors.amber[900]),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      order.notes!,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.amber[900],
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
           // Approval buttons for pending orders
           if (needsApproval)
             Padding(
@@ -330,7 +438,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 ],
               ),
             ),
-          
+
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: StatusTimelineWidget(
@@ -360,7 +468,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       ),
     );
   }
-  
+
   void _approveOrder(Order order) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -432,7 +540,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               controller: reasonController,
               maxLines: 3,
               decoration: InputDecoration(
-                hintText: 'Contoh: Stok material habis, ukuran tidak tersedia, dll',
+                hintText:
+                    'Contoh: Stok material habis, ukuran tidak tersedia, dll',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -552,11 +661,16 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildStatusButton(order, 'pending', 'Pending', Icons.hourglass_empty, Colors.orange),
-            _buildStatusButton(order, 'processing', 'Processing', Icons.sync, Colors.blue),
-            _buildStatusButton(order, 'printing', 'Printing', Icons.print, Colors.purple),
-            _buildStatusButton(order, 'completed', 'Completed', Icons.check_circle, Colors.green),
-            _buildStatusButton(order, 'cancelled', 'Cancelled', Icons.cancel, Colors.red),
+            _buildStatusButton(order, 'pending', 'Pending',
+                Icons.hourglass_empty, Colors.orange),
+            _buildStatusButton(
+                order, 'processing', 'Processing', Icons.sync, Colors.blue),
+            _buildStatusButton(
+                order, 'printing', 'Printing', Icons.print, Colors.purple),
+            _buildStatusButton(order, 'completed', 'Completed',
+                Icons.check_circle, Colors.green),
+            _buildStatusButton(
+                order, 'cancelled', 'Cancelled', Icons.cancel, Colors.red),
           ],
         ),
         actions: [
@@ -577,7 +691,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     Color color,
   ) {
     final isCurrentStatus = order.status == status;
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       child: ElevatedButton.icon(
@@ -598,7 +712,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
   Future<void> _updateStatus(Order order, String newStatus) async {
     Navigator.pop(context); // Close dialog
-    
+
     final orderProvider = Provider.of<OrderProvider>(context, listen: false);
     final success = await orderProvider.updateOrderStatus(order.id, newStatus);
 
@@ -619,7 +733,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       }
     }
   }
-  
+
   Future<void> _refreshOrders() async {
     await _loadOrders();
   }

@@ -13,6 +13,8 @@ class Order extends Model
         'order_number',
         'product_id',
         'customer_email',
+        'customer_name',
+        'customer_phone',
         'width',
         'height',
         'quantity',
@@ -24,6 +26,9 @@ class Order extends Model
         'total_price',
         'design_files',
         'status',
+        'approval_status',
+        'rejection_reason',
+        'reviewed_at',
         'is_urgent',
         'deadline_date',
         'customer_notes',
@@ -41,6 +46,14 @@ class Order extends Model
         'design_files' => 'array',
         'is_urgent' => 'boolean',
         'deadline_date' => 'date',
+        'reviewed_at' => 'datetime',
+    ];
+
+    protected $appends = [
+        'file_paths',
+        'product_name',
+        'material_name',
+        'finishing_name',
     ];
 
     /**
@@ -91,6 +104,50 @@ class Order extends Model
     public function scopeStatus($query, $status)
     {
         return $query->where('status', $status);
+    }
+
+    /**
+     * Get file paths as array for frontend
+     */
+    public function getFilePathsAttribute()
+    {
+        // First check if files relationship is loaded
+        if ($this->relationLoaded('files') && $this->files->isNotEmpty()) {
+            return $this->files->map(function ($file) {
+                return $file->file_path;
+            })->toArray();
+        }
+
+        // Fallback to design_files column if available
+        if (!empty($this->design_files)) {
+            return is_array($this->design_files) ? $this->design_files : [];
+        }
+
+        return [];
+    }
+
+    /**
+     * Get product name
+     */
+    public function getProductNameAttribute()
+    {
+        return $this->product ? $this->product->name : '';
+    }
+
+    /**
+     * Get material name
+     */
+    public function getMaterialNameAttribute()
+    {
+        return $this->material ? $this->material->name : '';
+    }
+
+    /**
+     * Get finishing name
+     */
+    public function getFinishingNameAttribute()
+    {
+        return $this->finishing ? $this->finishing->name : '';
     }
 
     /**

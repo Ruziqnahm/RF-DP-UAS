@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 
+// Model `Order` menyimpan semua informasi terkait satu pemesanan.
+// Digunakan untuk menampilkan riwayat pemesanan, detail order, dan
+// komunikasi dengan API backend.
 class Order {
   final int id;
   final int userId;
@@ -14,11 +17,14 @@ class Order {
   final String finishing;
   final int quantity;
   final int totalPrice;
-  final String status; // pending, processing, printing, completed, cancelled
-  final String approvalStatus; // pending_review, approved, rejected
+  // status alur kerja order: pending, processing, printing, completed, cancelled
+  final String status;
+  // status approval oleh admin: pending_review, approved, rejected
+  final String approvalStatus;
   final String? rejectionReason;
   final DateTime? reviewedAt;
   final String? notes;
+  // filePaths menyimpan lokasi file yang diunggah user (gambar/desain)
   final List<String> filePaths;
   final DateTime? deliveryDate;
   final bool isUrgent;
@@ -50,18 +56,17 @@ class Order {
     required this.updatedAt,
   });
 
+  // Konstruktor dari JSON. Perhatikan penanganan `file_paths` yang bisa
+  // tiba sebagai string JSON atau sebagai array langsung.
   factory Order.fromJson(Map<String, dynamic> json) {
-    // Parse file_paths from JSON string or array
     List<String> parsedFilePaths = [];
     if (json['file_paths'] != null) {
       if (json['file_paths'] is String) {
-        // If stored as JSON string, parse it
         try {
           final decoded = json['file_paths'];
           if (decoded.startsWith('[')) {
-            // It's a JSON array string
             parsedFilePaths = List<String>.from(
-              (jsonDecode(decoded) as List).map((e) => e.toString())
+              (jsonDecode(decoded) as List).map((e) => e.toString()),
             );
           } else {
             parsedFilePaths = [decoded];
@@ -74,40 +79,71 @@ class Order {
       }
     }
 
+    // Handle product relationship
+    String productName = '';
+    if (json['product_name'] != null) {
+      productName = json['product_name'];
+    } else if (json['product'] != null) {
+      final product = json['product'];
+      if (product is Map) {
+        productName = product['name'] ?? '';
+      }
+    }
+
+    // Handle material relationship
+    String materialName = '';
+    int materialId = 0;
+    if (json['material_name'] != null) {
+      materialName = json['material_name'];
+    } else if (json['material'] != null && json['material'] is Map) {
+      materialName = json['material']['name'] ?? '';
+      materialId = json['material']['id'] ?? 0;
+    }
+    if (json['material_id'] != null) {
+      materialId = json['material_id'] as int;
+    }
+
     return Order(
       id: json['id'] as int,
-      userId: json['user_id'] as int,
+      userId: json['user_id'] as int? ?? 0,
       productId: json['product_id'] as int,
-      productName: json['product_name'] ?? '',
-      materialId: json['material_id'] as int,
-      materialName: json['material_name'] ?? '',
+      productName: productName,
+      materialId: materialId,
+      materialName: materialName,
       size: json['size'] ?? '',
-      customWidth: json['custom_width'] != null 
-          ? double.tryParse(json['custom_width'].toString()) 
+      customWidth: json['width'] != null || json['custom_width'] != null
+          ? double.tryParse((json['width'] ?? json['custom_width']).toString())
           : null,
-      customHeight: json['custom_height'] != null
-          ? double.tryParse(json['custom_height'].toString())
+      customHeight: json['height'] != null || json['custom_height'] != null
+          ? double.tryParse((json['height'] ?? json['custom_height']).toString())
           : null,
       finishing: json['finishing'] ?? '',
-      quantity: json['quantity'] as int,
-      totalPrice: json['total_price'] as int,
+      quantity: json['quantity'] is String 
+          ? int.tryParse(json['quantity']) ?? 0 
+          : (json['quantity'] as int? ?? 0),
+      totalPrice: json['total_price'] is String
+          ? (double.tryParse(json['total_price']) ?? 0).toInt()
+          : (json['total_price'] is int 
+              ? json['total_price'] as int
+              : (json['total_price'] as num?)?.toInt() ?? 0),
       status: json['status'] ?? 'pending',
       approvalStatus: json['approval_status'] ?? 'pending_review',
       rejectionReason: json['rejection_reason'],
       reviewedAt: json['reviewed_at'] != null
-          ? DateTime.tryParse(json['reviewed_at'])
+          ? DateTime.tryParse(json['reviewed_at'].toString())
           : null,
-      notes: json['notes'],
+      notes: json['notes'] ?? json['admin_notes'],
       filePaths: parsedFilePaths,
-      deliveryDate: json['delivery_date'] != null
-          ? DateTime.tryParse(json['delivery_date'])
+      deliveryDate: json['delivery_date'] != null || json['deadline_date'] != null
+          ? DateTime.tryParse((json['delivery_date'] ?? json['deadline_date']).toString())
           : null,
       isUrgent: json['is_urgent'] == 1 || json['is_urgent'] == true,
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: DateTime.parse(json['updated_at']),
+      createdAt: DateTime.parse(json['created_at'].toString()),
+      updatedAt: DateTime.parse(json['updated_at'].toString()),
     );
   }
 
+  // Konversi ke JSON untuk dikirim ke API jika diperlukan
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -132,6 +168,7 @@ class Order {
     };
   }
 
+  // Helper untuk format harga dengan pemisah ribuan (mis. 1.000.000)
   String getFormattedPrice() {
     return totalPrice.toString().replaceAllMapped(
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
@@ -139,8 +176,10 @@ class Order {
     );
   }
 
+  // Helper untuk mendapatkan label status dalam Bahasa Indonesia
   String getStatusLabel() {
-    switch (status.toLowerCase()) {
+    final mappedStatus = _mapBackendStatus(status);
+    switch (mappedStatus.toLowerCase()) {
       case 'pending':
         return 'Menunggu Konfirmasi';
       case 'processing':
@@ -155,9 +194,31 @@ class Order {
         return 'Unknown';
     }
   }
-  
+
+  // Map backend status ke UI status
+  String _mapBackendStatus(String backendStatus) {
+    switch (backendStatus.toLowerCase()) {
+      case 'pending':
+        return 'pending';
+      case 'confirmed':
+        return 'processing'; // confirmed maps to processing
+      case 'processing':
+        return 'processing';
+      case 'ready':
+        return 'printing'; // ready maps to printing
+      case 'completed':
+        return 'completed';
+      case 'cancelled':
+        return 'cancelled';
+      default:
+        return backendStatus;
+    }
+  }
+
+  // Warna UI untuk status order
   Color getStatusColor() {
-    switch (status.toLowerCase()) {
+    final mappedStatus = _mapBackendStatus(status);
+    switch (mappedStatus.toLowerCase()) {
       case 'pending':
         return Colors.orange;
       case 'processing':
@@ -172,7 +233,8 @@ class Order {
         return Colors.grey;
     }
   }
-  
+
+  // Label approval admin
   String getApprovalStatusLabel() {
     switch (approvalStatus.toLowerCase()) {
       case 'pending_review':
@@ -185,7 +247,8 @@ class Order {
         return 'Unknown';
     }
   }
-  
+
+  // Warna untuk status approval
   Color getApprovalStatusColor() {
     switch (approvalStatus.toLowerCase()) {
       case 'pending_review':
@@ -198,7 +261,8 @@ class Order {
         return Colors.grey;
     }
   }
-  
+
+  // Ikon visual untuk status approval
   IconData getApprovalStatusIcon() {
     switch (approvalStatus.toLowerCase()) {
       case 'pending_review':
@@ -212,6 +276,7 @@ class Order {
     }
   }
 
+  // Format ukuran jika custom
   String getFormattedSize() {
     if (size == 'Custom' && customWidth != null && customHeight != null) {
       return '${customWidth}x${customHeight} cm';

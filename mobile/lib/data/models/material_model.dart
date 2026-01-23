@@ -1,7 +1,11 @@
+// Model `Material` merepresentasikan opsi bahan untuk produk tertentu.
+// Field `priceMultiplier` dapat digunakan untuk menghitung harga akhir
+// berdasarkan harga dasar produk.
 class Material {
   final int id;
   final int productId;
   final String name;
+  // Pengali harga (mis. 1.0 = standar, 1.5 = 50% lebih mahal)
   final double priceMultiplier;
   final String? description;
   final bool isActive;
@@ -26,6 +30,7 @@ class Material {
     );
   }
 
+  // Placeholder: fungsi untuk menghitung harga per m2 jika diimplementasikan
   get pricePerSqm => null;
 
   Map<String, dynamic> toJson() {
@@ -39,7 +44,7 @@ class Material {
     };
   }
 
-  // dummy data bahan cetak (fallback jika API tidak tersedia)
+  // Contoh data dummy untuk presentasi atau fallback
   static List<Material> getDummyMaterials() {
     return [
       Material(

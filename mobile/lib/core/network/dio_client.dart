@@ -1,6 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:mobile/core/constants/api_constants.dart';
 
+// Simple wrapper di atas package `dio` untuk memudahkan pemanggilan API
+// dan menerapkan konfigurasi global seperti baseUrl, timeout, dan
+// interceptor logging.
 class DioClient {
   late Dio _dio;
 
@@ -14,11 +17,11 @@ class DioClient {
       ),
     );
 
-    // Add interceptors for logging and token handling
+    // Tambahkan interceptor untuk logging dan (opsional) handling token
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) {
-          // Add auth token if exists
+          // TODO: tambahkan header Authorization ketika token tersedia
           // final token = getTokenFromStorage();
           // if (token != null) {
           //   options.headers['Authorization'] = 'Bearer $token';
@@ -40,7 +43,7 @@ class DioClient {
 
   Dio get dio => _dio;
 
-  // GET Request
+  // GET Request helper
   Future<Response> get(
     String path, {
     Map<String, dynamic>? queryParameters,
@@ -58,7 +61,7 @@ class DioClient {
     }
   }
 
-  // POST Request
+  // POST Request helper
   Future<Response> post(
     String path, {
     dynamic data,
@@ -78,7 +81,7 @@ class DioClient {
     }
   }
 
-  // PUT Request
+  // PUT Request helper
   Future<Response> put(
     String path, {
     dynamic data,
@@ -98,7 +101,7 @@ class DioClient {
     }
   }
 
-  // DELETE Request
+  // DELETE Request helper
   Future<Response> delete(
     String path, {
     dynamic data,

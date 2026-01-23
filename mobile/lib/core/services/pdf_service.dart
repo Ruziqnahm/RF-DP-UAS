@@ -5,8 +5,11 @@ import 'package:printing/printing.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
+// Service untuk membuat invoice dalam bentuk PDF atau TXT.
+// Digunakan saat user ingin menyimpan atau membagikan rincian order.
 class PdfService {
-  /// Generate PDF order details
+  /// Generate PDF order details dan langsung membuka dialog share/print.
+  /// Parameter: informasi ringkasan order (nama produk, material, harga, dsb).
   static Future<void> generateOrderPdf({
     required String productName,
     required String materialName,

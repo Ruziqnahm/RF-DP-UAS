@@ -40,6 +40,8 @@ class OrderDetailPage extends StatelessWidget {
             const Divider(height: 32, thickness: 8),
             _buildProductDetails(),
             const Divider(height: 32, thickness: 8),
+            _buildFileAttachments(),
+            const Divider(height: 32, thickness: 8),
             _buildPriceBreakdown(),
             if (order.notes != null && order.notes!.isNotEmpty) ...[
               const Divider(height: 32, thickness: 8),
@@ -268,6 +270,7 @@ class OrderDetailPage extends StatelessWidget {
   }
 
   Widget _buildProductDetails() {
+    var formattedSize = order.getFormattedSize();
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -297,11 +300,12 @@ class OrderDetailPage extends StatelessWidget {
                 const Divider(height: 20),
                 _buildInfoRow('Material', order.materialName),
                 const Divider(height: 20),
-                _buildInfoRow('Ukuran', order.getFormattedSize()),
+                _buildInfoRow('Ukuran', formattedSize),
                 const Divider(height: 20),
                 _buildInfoRow('Finishing', order.finishing),
                 const Divider(height: 20),
                 _buildInfoRow('Kuantitas', '${order.quantity} pcs'),
+
               ],
             ),
           ),

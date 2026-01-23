@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/presentation/pages/admin_dashboard_page.dart';
+import 'package:mobile/presentation/pages/order_history_page.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_strings.dart';
 import '../providers/order_provider.dart';
@@ -226,17 +228,6 @@ class _HomePageState extends State<HomePage> {
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                       ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const ServicesPage(),
-                          ),
-                        );
-                      },
-                      child: const Text('Lihat Semua'),
                     ),
                   ],
                 ),
@@ -544,17 +535,6 @@ class _HomePageState extends State<HomePage> {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.design_services),
-            title: const Text('Layanan'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const ServicesPage()),
-              );
-            },
-          ),
-          ListTile(
             leading: const Icon(Icons.info),
             title: const Text('Tentang'),
             onTap: () {
@@ -573,6 +553,28 @@ class _HomePageState extends State<HomePage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const ContactPage()),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.account_circle),
+            title: const Text('admin'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const AdminDashboardPage()),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.history),
+            title: const Text('history'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const OrderHistoryPage()),
               );
             },
           ),

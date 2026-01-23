@@ -1,9 +1,11 @@
 import 'dart:typed_data';
 
+// Metadata untuk setiap file yang diupload, berguna untuk preview dan
+// mengetahui ukuran file tanpa harus membaca isi file di tempat lain.
 class FileMetadata {
   final String path;
   final int size;
-  final Uint8List? webBytes; // For web preview
+  final Uint8List? webBytes; // Untuk preview di web/Flutter web
 
   FileMetadata({
     required this.path,
@@ -12,6 +14,9 @@ class FileMetadata {
   });
 }
 
+// OrderSpecification menampung konfigurasi pesanan sebelum dikonversi
+// menjadi objek `Order`. Ini menyimpan ukuran, material, finishing,
+// file yang diupload, dan informasi pengiriman.
 class OrderSpecification {
   String? size;
   double? customWidth;
@@ -20,8 +25,10 @@ class OrderSpecification {
   String? finishing;
   int quantity;
   String? notes;
-  List<String> filePaths; // Multiple files (backward compatibility)
-  List<FileMetadata> fileMetadataList; // New: with size and preview data
+  // list path file (compatibility dengan implementasi lama)
+  List<String> filePaths;
+  // list metadata file yang lebih kaya (size + preview)
+  List<FileMetadata> fileMetadataList;
   DateTime? deliveryDate;
   bool isUrgent;
 
@@ -37,24 +44,24 @@ class OrderSpecification {
     List<FileMetadata>? fileMetadataList,
     this.deliveryDate,
     this.isUrgent = false,
-  }) : filePaths = filePaths ?? [],
+  })  : filePaths = filePaths ?? [],
        fileMetadataList = fileMetadataList ?? [];
 
-  // cek form udah lengkap belum
+  // Validasi apakah spesifikasi sudah lengkap untuk melakukan order
   bool isComplete() {
     if (size == null || materialId == null || finishing == null) {
       return false;
     }
-    
-    // kalau custom, harus ada width & height
+
+    // Jika ukuran custom, lebar dan tinggi harus diisi
     if (size == 'Custom' && (customWidth == null || customHeight == null)) {
       return false;
     }
-    
+
     return true;
   }
 
-  // hitung luas (m2)
+  // Menghitung luas dalam meter persegi berdasarkan ukuran
   double getArea() {
     if (size == 'A3') {
       return 0.297 * 0.42;
@@ -63,9 +70,9 @@ class OrderSpecification {
     } else if (size == 'A5') {
       return 0.148 * 0.21;
     } else if (size == 'Custom' && customWidth != null && customHeight != null) {
-      return (customWidth! / 100) * (customHeight! / 100); // cm ke m
+      return (customWidth! / 100) * (customHeight! / 100); // cm -> m
     }
-    
+
     return 0;
   }
 }

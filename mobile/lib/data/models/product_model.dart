@@ -1,16 +1,29 @@
 import 'material_model.dart';
 import 'finishing_model.dart';
 
+// Model `Product` merepresentasikan data produk yang didapat dari API
+// atau digunakan secara lokal (dummy). Semua field dibuat immutable
+// (final) agar model tetap sederhana dan mudah dipakai di UI.
 class Product {
+  // Identitas produk dari backend
   final int id;
+  // Nama produk (mis. Banner Indoor)
   final String name;
+  // Kategori produk (mis. Banner, Stiker)
   final String category;
+  // Harga dasar dalam satuan integer (mis. Rupiah)
   final int basePrice;
+  // Satuan (Meter, Lembar, Pack)
   final String unit;
+  // Deskripsi singkat produk
   final String description;
+  // Path atau URL gambar produk
   final String imageUrl;
+  // Status aktif produk
   final bool isActive;
+  // Relasi satu-ke-banyak: bahan yang tersedia untuk produk ini
   final List<Material>? materials;
+  // Relasi satu-ke-banyak: opsi finishing untuk produk ini
   final List<Finishing>? finishings;
 
   Product({
@@ -26,13 +39,15 @@ class Product {
     this.finishings,
   });
 
-  // From JSON (dari API Laravel)
+  // Membuat instance `Product` dari JSON (payload API Laravel)
+  // Catatan: beberapa API mengembalikan angka sebagai String, sehingga
+  // parsing aman dilakukan dengan pengecekan tipe.
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
       id: json['id'] ?? 0,
       name: json['name'] ?? '',
       category: json['category'] ?? '',
-      basePrice: (json['base_price'] is String) 
+      basePrice: (json['base_price'] is String)
           ? int.tryParse(json['base_price']) ?? 0
           : (json['base_price'] ?? 0).toInt(),
       unit: json['unit'] ?? 'Pack',
@@ -48,7 +63,7 @@ class Product {
     );
   }
 
-  // To JSON
+  // Mengubah model menjadi Map untuk dikirimkan ke API jika diperlukan
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -64,23 +79,23 @@ class Product {
     };
   }
 
-  // dummy data produk (fallback jika API tidak tersedia)
+  // Contoh data dummy lokal untuk presentasi atau fallback
   static List<Product> getDummyProducts() {
     return [
       Product(
         id: 1,
         name: 'Banner Indoor',
         category: 'Banner',
-        basePrice: 20000, // Rp 2
+        basePrice: 20000,
         unit: 'Meter',
         description: 'Banner dengan kualitas printing terbaik - Rp 20.000/Meter',
-        imageUrl: 'assets/images/cetak_banner.jpg', 
+        imageUrl: 'assets/images/cetak_banner.jpg',
       ),
       Product(
         id: 2,
         name: 'Stiker Vinyl',
         category: 'Stiker',
-        basePrice: 10000, // Rp 10.000 per A4
+        basePrice: 10000,
         unit: 'Lembar',
         description: 'Stiker vinyl kualitas premium - Rp 10.000/A4',
         imageUrl: 'assets/images/cetak_stiker_vinyl.jpg',
@@ -89,7 +104,7 @@ class Product {
         id: 3,
         name: 'Kartu Nama',
         category: 'Kartu',
-        basePrice: 30000, // Rp 30.000 per pack (harga umum)
+        basePrice: 30000,
         unit: 'Pack',
         description: 'Kartu nama dengan bahan premium - Rp 30.000/pack',
         imageUrl: 'assets/images/kartu_nama.jpg',
@@ -98,7 +113,7 @@ class Product {
         id: 4,
         name: 'UV Printing',
         category: 'UV',
-        basePrice: 15000, // Rp 15.000 per pack (harga umum)
+        basePrice: 15000,
         unit: 'Pack',
         description: 'Cetak UV dengan hasil timbul dan glossy - Rp 15.000/pack',
         imageUrl: 'assets/images/uv_cetak.jpg',
