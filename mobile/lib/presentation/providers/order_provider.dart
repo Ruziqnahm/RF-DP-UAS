@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:mime/mime.dart';
 import '../../data/models/product_model.dart';
-import '../../data/models/material_model.dart' as mat;
+import '../../data/models/material_model.dart';
 import '../../data/models/specification_model.dart';
 import '../../data/models/order_model.dart';
 import '../../data/services/api_service.dart';
@@ -42,9 +42,97 @@ class OrderProvider with ChangeNotifier {
     if (!_specification.isComplete() || _selectedProduct == null) return 0;
 
     // Untuk Banner: hitung berdasarkan meter
+  // Price getters now return stored state
+  int get materialCost => _materialCost;
+  int get finishingCost => _finishingCost;
+  int get subtotal => _subtotal;
+  int get urgentFee => _urgentFee;
+
+  // Breakdown Getters for UI
+  String get breakdownMaterialName => _getFormattedMaterial();
+
+  int get breakdownMaterialPriceBase {
+    if (_selectedProduct == null || _specification.materialId == null) return 0;
+
+    // Get Base Price
+    double basePrice = _selectedProduct!.basePrice.toDouble();
+
+    // Get Multiplier
+    double materialMultiplier = 1.0;
+    final materials = PrintMaterial.getDummyMaterials();
+    try {
+      final selectedMaterial = materials.firstWhere(
+        (m) => m.id == _specification.materialId,
+      );
+      materialMultiplier = selectedMaterial.priceMultiplier;
+    } catch (_) {}
+
+    // Banner: Price per m2
+    // Others: Price per unit/pcs
+    return (basePrice * materialMultiplier).round();
+  }
+
+  int get breakdownFinishingPrice {
+    if (_selectedProduct == null || _specification.finishing == null) return 0;
+
+    final finishings = Finishing.getDummyFinishings();
+    try {
+      final selectedFinishing = finishings.firstWhere((f) =>
+          f.name == _specification.finishing &&
+          f.productId == _selectedProduct!.id);
+      return selectedFinishing.additionalPrice.round();
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  int get breakdownUnitPrice {
+    // Calculate Unit Price (without quantity or urgent fee)
+    // Use logic similar to calculatePrice but for single unit
+    // Reuse existing values if possible, or recalculate safely
+
+    // Simplified recalculation to avoid race conditions:
+    // If we are sure calculatePrice is called, we could store _unitPrice private var.
+    // But recalculating is safer for getters.
+
+    if (_selectedProduct == null) return 0;
+
+    int mPrice = breakdownMaterialPriceBase;
+    int fPrice = breakdownFinishingPrice;
+
     if (_selectedProduct!.name.toLowerCase().contains('banner')) {
       double area = _specification.getArea();
-      return (_selectedProduct!.basePrice * area).round();
+      if (area < 1.0) area = 1.0;
+      return ((mPrice * area) + fPrice).round();
+    } else if (_selectedProduct!.name.toLowerCase().contains('stiker')) {
+      if (_specification.size == 'Custom') {
+        // Base provided is per A3, convert to m2 logic for Base Price display?
+        // No, breakdownMaterialPriceBase returns Per A3 price (15k * mult).
+        // But logic for Custom size uses per m2 logic.
+
+        // To be consistent with calculatePrice logic for Sticker Custom:
+        // double basePerM2 = basePrice / 0.15;
+        // unitPrice = (basePerM2 * area * mult) + f;
+
+        double basePrice = _selectedProduct!.basePrice.toDouble();
+        double materialMultiplier = 1.0;
+        // ... get multiplier ...
+        final materials = PrintMaterial.getDummyMaterials();
+        try {
+          final selectedMaterial = materials.firstWhere(
+            (m) => m.id == _specification.materialId,
+          );
+          materialMultiplier = selectedMaterial.priceMultiplier;
+        } catch (_) {}
+
+        double basePerM2 = basePrice / 0.15;
+        double area = _specification.getArea();
+        return ((basePerM2 * area * materialMultiplier) + fPrice).round();
+      } else {
+        return mPrice + fPrice;
+      }
+    } else {
+      return mPrice + fPrice;
     }
 
     // Untuk produk lain: harga base per unit
@@ -268,10 +356,45 @@ class OrderProvider with ChangeNotifier {
   void calculatePrice() {
     if (_selectedProduct == null || !_specification.isComplete()) {
       _totalPrice = 0;
+      _materialCost = 0;
+      _finishingCost = 0;
+      _subtotal = 0;
+      _urgentFee = 0;
       return;
     }
 
-    int subtotal = 0;
+    // 1. Get Base Data
+    double basePrice = _selectedProduct!.basePrice.toDouble();
+
+    // 2. Get Material Multiplier
+    double materialMultiplier = 1.0;
+    if (_specification.materialId != null) {
+      // In real app, we should fetch from backend or cached list
+      // Here we use dummy data for calculation
+      final materials = PrintMaterial.getDummyMaterials();
+      final selectedMaterial = materials.firstWhere(
+        (m) => m.id == _specification.materialId,
+        orElse: () => materials.first,
+      );
+      materialMultiplier = selectedMaterial.priceMultiplier;
+    }
+
+    // 3. Get Finishing Cost
+    double finishingCost = 0;
+    if (_specification.finishing != null) {
+      final finishings = Finishing.getDummyFinishings();
+      try {
+        final selectedFinishing = finishings.firstWhere((f) =>
+            f.name == _specification.finishing &&
+            f.productId == _selectedProduct!.id);
+        finishingCost = selectedFinishing.additionalPrice;
+      } catch (e) {
+        // Fallback if name not found or mismatch (e.g. legacy data)
+        finishingCost = 0;
+      }
+    }
+
+    double unitPrice = 0;
     final productName = _selectedProduct!.name.toLowerCase();
 
     if (productName.contains('banner')) {
@@ -296,17 +419,29 @@ class OrderProvider with ChangeNotifier {
         double area = width * height;
         subtotal = (base * area * _specification.quantity).round();
       } else {
-        subtotal = base * _specification.quantity;
+        double matPrice = basePrice * materialMultiplier;
+        totalMaterialCost = matPrice * _specification.quantity;
+        totalFinishingCost = finishingCost * _specification.quantity;
       }
-    } else if (productName.contains('kartu')) {
-      // Kartu Nama: Rp 30.000/pack
-      subtotal = _selectedProduct!.basePrice * _specification.quantity;
-    } else if (productName.contains('uv')) {
-      // UV Printing: Rp 15.000/pack
-      subtotal = _selectedProduct!.basePrice * _specification.quantity;
     } else {
-      // Default: harga base x quantity
-      subtotal = _selectedProduct!.basePrice * _specification.quantity;
+      double matPrice = basePrice * materialMultiplier;
+      totalMaterialCost = matPrice * _specification.quantity;
+      totalFinishingCost = finishingCost * _specification.quantity;
+    }
+
+    _materialCost = totalMaterialCost.round();
+    _finishingCost = totalFinishingCost.round();
+
+    // 4. Calculate Subtotal
+    int subtotal = _materialCost + _finishingCost;
+    _subtotal = subtotal;
+
+    // 5. Urgent Fee
+    if (_specification.isUrgent) {
+      _urgentFee = (subtotal * 0.3).round(); // +30%
+      subtotal += _urgentFee;
+    } else {
+      _urgentFee = 0;
     }
 
     _totalPrice = subtotal;

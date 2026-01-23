@@ -9,7 +9,8 @@ import '../../core/constants/app_strings.dart';
 import '../../core/services/pdf_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/product_model.dart';
-import '../../data/models/material_model.dart' as mat;
+import '../../data/models/material_model.dart';
+import '../../data/models/finishing_model.dart';
 import '../providers/order_provider.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/price_calculator_widget.dart';
@@ -18,7 +19,7 @@ import '../widgets/file_preview_widget.dart';
 class ProductDetailPage extends StatefulWidget {
   final Product product;
 
-  const ProductDetailPage({Key? key, required this.product}) : super(key: key);
+  const ProductDetailPage({super.key, required this.product});
 
   @override
   State<ProductDetailPage> createState() => _ProductDetailPageState();
@@ -39,8 +40,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     if (name.contains('stiker vinyl') || name.contains('uv printing')) {
       return ['A3', 'A4', 'A5', 'Custom'];
     }
-    // Logika untuk Banner Indoor (Hanya Custom)
-    else if (name.contains('banner indoor')) {
+    // Logika untuk Banner  (Hanya Custom)
+    else if (name.contains('banner')) {
       return ['Custom'];
     }
     // Logika untuk Kartu Nama (Hanya Custom)
@@ -284,13 +285,41 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             labelText: 'Bahan',
             prefixIcon: Icons.texture,
           ),
+          isExpanded: true, // Fix overflow
           hint: Text('Pilih bahan'),
-          items: materials.map((material) {
-            return DropdownMenuItem(
-              value: material.id,
-              child: Text('${material.name} (Rp ${material.pricePerSqm}/m²)'),
-            );
-          }).toList(),
+          items: materials
+              .map((material) {
+                // Filter materials by product ID first (safety check)
+                if (material.productId != widget.product.id) {
+                  return null;
+                }
+
+                // Calculate dynamic price based on product base price
+                int estimatedPrice =
+                    (widget.product.basePrice * material.priceMultiplier)
+                        .round();
+
+                // Determine unit suffix
+                String unit = '/pcs';
+                final pName = widget.product.name.toLowerCase();
+                if (pName.contains('banner'))
+                  unit = '/m²';
+                else if (pName.contains('stiker'))
+                  unit = '/lbr A3';
+                else if (pName.contains('kartu')) unit = '/box';
+
+                return DropdownMenuItem(
+                  value: material.id,
+                  child: Text(
+                    '${material.name} (Rp ${estimatedPrice}$unit)',
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    style: TextStyle(fontSize: 14),
+                  ),
+                );
+              })
+              .whereType<DropdownMenuItem<int>>()
+              .toList(), // Filter out nulls
           onChanged: (value) {
             if (value != null) provider.setMaterial(value);
           },
@@ -316,9 +345,25 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             labelText: 'Finishing',
             prefixIcon: Icons.auto_awesome,
           ),
+          isExpanded: true,
           hint: Text('Pilih finishing'),
-          items: finishings.map((finishing) {
-            return DropdownMenuItem(value: finishing, child: Text(finishing));
+          items: Finishing.getDummyFinishings()
+              .where((f) => f.productId == widget.product.id)
+              .map((finishing) {
+            String priceText = '';
+            if (finishing.additionalPrice > 0) {
+              priceText = ' (+Rp ${finishing.additionalPrice.round()})';
+            }
+
+            return DropdownMenuItem(
+              value: finishing.name,
+              child: Text(
+                '${finishing.name}$priceText',
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                style: TextStyle(fontSize: 14),
+              ),
+            );
           }).toList(),
           onChanged: (value) {
             if (value != null) provider.setFinishing(value);
@@ -841,7 +886,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   }
 
   Widget _buildOrderConfirmationDialog(OrderProvider provider) {
-    final materials = mat.Material.getDummyMaterials();
+    final materials = PrintMaterial.getDummyMaterials();
     final selectedMaterial = materials.firstWhere(
       (m) => m.id == provider.specification.materialId,
       orElse: () => materials.first,
@@ -907,7 +952,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     );
   }
 
-  Future<void> _exportPdf(OrderProvider provider, mat.Material material) async {
+  Future<void> _exportPdf(
+      OrderProvider provider, PrintMaterial material) async {
     try {
       await PdfService.generateOrderPdf(
         productName: widget.product.name,
@@ -932,7 +978,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     }
   }
 
-  Future<void> _exportTxt(OrderProvider provider, mat.Material material) async {
+  Future<void> _exportTxt(
+      OrderProvider provider, PrintMaterial material) async {
     try {
       await PdfService.generateOrderTxt(
         productName: widget.product.name,

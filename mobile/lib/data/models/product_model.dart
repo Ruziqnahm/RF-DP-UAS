@@ -55,10 +55,14 @@ class Product {
       imageUrl: json['image_url'] ?? 'assets/images/placeholder.jpg',
       isActive: json['is_active'] ?? true,
       materials: json['materials'] != null
-          ? (json['materials'] as List).map((m) => Material.fromJson(m)).toList()
+          ? (json['materials'] as List)
+              .map((m) => PrintMaterial.fromJson(m))
+              .toList()
           : null,
       finishings: json['finishings'] != null
-          ? (json['finishings'] as List).map((f) => Finishing.fromJson(f)).toList()
+          ? (json['finishings'] as List)
+              .map((f) => Finishing.fromJson(f))
+              .toList()
           : null,
     );
   }
@@ -74,8 +78,10 @@ class Product {
       'description': description,
       'image_url': imageUrl,
       'is_active': isActive,
-      if (materials != null) 'materials': materials!.map((m) => m.toJson()).toList(),
-      if (finishings != null) 'finishings': finishings!.map((f) => f.toJson()).toList(),
+      if (materials != null)
+        'materials': materials!.map((m) => m.toJson()).toList(),
+      if (finishings != null)
+        'finishings': finishings!.map((f) => f.toJson()).toList(),
     };
   }
 
@@ -84,7 +90,7 @@ class Product {
     return [
       Product(
         id: 1,
-        name: 'Banner Indoor',
+        name: 'Banner ',
         category: 'Banner',
         basePrice: 20000,
         unit: 'Meter',
@@ -97,7 +103,7 @@ class Product {
         category: 'Stiker',
         basePrice: 10000,
         unit: 'Lembar',
-        description: 'Stiker vinyl kualitas premium - Rp 10.000/A4',
+        description: 'Stiker vinyl (32x48 cm).',
         imageUrl: 'assets/images/cetak_stiker_vinyl.jpg',
       ),
       Product(
@@ -111,7 +117,7 @@ class Product {
       ),
       Product(
         id: 4,
-        name: 'UV Printing',
+        name: 'UV Printing (Flatbed)',
         category: 'UV',
         basePrice: 15000,
         unit: 'Pack',

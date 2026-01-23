@@ -88,13 +88,15 @@ class ApiService {
         final data = json.decode(response.body);
         if (data['success'] == true) {
           final List materialsJson = data['data'];
-          return materialsJson.map((json) => Material.fromJson(json)).toList();
+          return materialsJson
+              .map((json) => PrintMaterial.fromJson(json))
+              .toList();
         }
       }
       return [];
     } catch (e) {
       print('Error fetching materials: $e');
-      return Material.getDummyMaterials();
+      return PrintMaterial.getDummyMaterials();
     }
   }
 

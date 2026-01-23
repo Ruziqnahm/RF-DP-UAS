@@ -255,34 +255,34 @@ class OrderController extends Controller
             $subtotal = $product->base_price * $area * $request->quantity;
         }
 
-        // Apply material multiplier
-        $materialCost = 0;
-        if ($material) {
-            $materialCost = $subtotal * ($material->price_multiplier - 1);
-        }
+        // 4. Calculate Unit Price Total (Material + Finishing)
+        $unitPrice = $materialPricePerUnit + $finishingCostPerUnit;
 
-        // Add finishing cost
-        $finishingCost = 0;
-        if ($finishing) {
-            $finishingCost = $finishing->additional_price * $request->quantity;
-        }
+        // 5. Calculate Subtotal
+        $subtotal = round($unitPrice * $request->quantity);
 
-        // Calculate total
-        $total = $subtotal + $materialCost + $finishingCost;
+        // 6. Components for Breakdown
+        $totalMaterialCost = round($materialPricePerUnit * $request->quantity);
+        $totalFinishingCost = round($finishingCostPerUnit * $request->quantity);
 
-        // Add urgent fee (30%)
+        // 7. Urgent Fee
+        $urgentFee = 0;
         if ($request->is_urgent) {
-            $total *= 1.3;
+            $urgentFee = round($subtotal * 0.3);
         }
+
+        // 8. Total
+        $total = $subtotal + $urgentFee;
 
         return response()->json([
             'success' => true,
             'message' => 'Price calculated successfully',
             'data' => [
-                'subtotal' => round($subtotal, 2),
-                'material_cost' => round($materialCost, 2),
-                'finishing_cost' => round($finishingCost, 2),
-                'total_price' => round($total, 2),
+                'subtotal' => $subtotal,
+                'material_cost' => $totalMaterialCost,
+                'finishing_cost' => $totalFinishingCost,
+                'urgent_fee' => $urgentFee,
+                'total_price' => $total,
                 'is_urgent' => $request->is_urgent ?? false,
             ]
         ], 200);

@@ -27,7 +27,14 @@ class AppConstants {
 
   // File Upload
   static const int maxFileSize = 10 * 1024 * 1024; // 10 MB
-  static const List<String> allowedFileTypes = ['jpg', 'jpeg', 'png', 'pdf', 'ai', 'psd'];
+  static const List<String> allowedFileTypes = [
+    'jpg',
+    'jpeg',
+    'png',
+    'pdf',
+    'ai',
+    'psd'
+  ];
 
   // Validation
   static const int minPasswordLength = 6;
@@ -42,6 +49,5 @@ class AppConstants {
 
   // Images
   static const String placeholderImage = 'assets/images/placeholder.png';
-  static const String logoImage = 'assets/logo/logo.png';
   static const String emptyStateImage = 'assets/images/empty_state.png';
 }
