@@ -1,7 +1,11 @@
-class PrintMaterial {
+// Model `Material` merepresentasikan opsi bahan untuk produk tertentu.
+// Field `priceMultiplier` dapat digunakan untuk menghitung harga akhir
+// berdasarkan harga dasar produk.
+class Material {
   final int id;
   final int productId;
   final String name;
+  // Pengali harga (mis. 1.0 = standar, 1.5 = 50% lebih mahal)
   final double priceMultiplier;
   final String? description;
   final bool isActive;
@@ -26,7 +30,8 @@ class PrintMaterial {
     );
   }
 
-  double get pricePerSqm => 0.0;
+  // Placeholder: fungsi untuk menghitung harga per m2 jika diimplementasikan
+  get pricePerSqm => null;
 
   Map<String, dynamic> toJson() {
     return {
@@ -39,8 +44,8 @@ class PrintMaterial {
     };
   }
 
-  // dummy data bahan cetak (fallback jika API tidak tersedia)
-  static List<PrintMaterial> getDummyMaterials() {
+  // Contoh data dummy untuk presentasi atau fallback
+  static List<Material> getDummyMaterials() {
     return [
       // Banner Materials (Product ID 1)
       PrintMaterial(

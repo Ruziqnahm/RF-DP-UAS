@@ -16,7 +16,7 @@ class OrderController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Order::with(['product', 'material', 'finishing']);
+        $query = Order::with(['product', 'material', 'finishing', 'files']);
 
         // Filter by customer phone (untuk guest users)
         if ($request->has('customer_phone')) {
@@ -98,7 +98,7 @@ class OrderController extends Controller
             foreach ($request->file('design_files') as $file) {
                 $fileName = time() . '_' . $file->getClientOriginalName();
                 $filePath = $file->storeAs('orders/' . $order->id, $fileName, 'public');
-                
+
                 // Save to order_files table
                 OrderFile::create([
                     'order_id' => $order->id,
@@ -151,7 +151,9 @@ class OrderController extends Controller
     public function updateStatus(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
-            'status' => 'required|in:pending,confirmed,processing,ready,completed,cancelled',
+            'status' => 'nullable|in:pending,confirmed,processing,ready,completed,cancelled,approved,rejected,pending,processing,printing',
+            'approval_status' => 'nullable|in:pending_review,approved,rejected',
+            'rejection_reason' => 'nullable|string|required_if:approval_status,rejected',
             'admin_notes' => 'nullable|string',
         ]);
 
@@ -172,15 +174,48 @@ class OrderController extends Controller
             ], 404);
         }
 
-        $order->update([
-            'status' => $request->status,
-            'admin_notes' => $request->admin_notes,
-        ]);
+        $updateData = [];
+
+        // Update main status if provided
+        if ($request->has('status')) {
+            $status = $request->status;
+            // Map special statuses to proper ones
+            if ($status === 'approved') {
+                $updateData['status'] = 'processing';
+                $updateData['approval_status'] = 'approved';
+            } elseif ($status === 'rejected') {
+                $updateData['status'] = 'cancelled';
+                $updateData['approval_status'] = 'rejected';
+            } elseif ($status === 'printing') {
+                $updateData['status'] = 'processing'; // Treat printing as processing
+            } else {
+                $updateData['status'] = $status;
+            }
+        }
+
+        // Update approval status
+        if ($request->has('approval_status')) {
+            $updateData['approval_status'] = $request->approval_status;
+            if ($request->approval_status === 'approved') {
+                $updateData['status'] = 'processing';
+            } elseif ($request->approval_status === 'rejected') {
+                $updateData['status'] = 'cancelled';
+                $updateData['rejection_reason'] = $request->rejection_reason;
+            }
+            $updateData['reviewed_at'] = now();
+        }
+
+        // Add admin notes if provided
+        if ($request->has('admin_notes')) {
+            $updateData['admin_notes'] = $request->admin_notes;
+        }
+
+        $order->update($updateData);
 
         return response()->json([
             'success' => true,
             'message' => 'Order status updated successfully',
-            'data' => $order
+            'data' => $order->load(['product', 'material', 'finishing', 'files'])
         ], 200);
     }
 
@@ -211,45 +246,13 @@ class OrderController extends Controller
         $material = $request->material_id ? \App\Models\Material::find($request->material_id) : null;
         $finishing = $request->finishing_id ? \App\Models\Finishing::find($request->finishing_id) : null;
 
-        // 1. Get Base Data
-        $basePrice = $product->base_price;
-        $multiplier = $material ? $material->price_multiplier : 1.0;
-        
-        // 2. Get Finishing Cost
-        $finishingCostPerUnit = $finishing ? $finishing->additional_price : 0;
+        // Calculate base price
+        $subtotal = $product->base_price * $request->quantity;
 
-        $productName = strtolower($product->name);
-        $materialPricePerUnit = 0;
-
-        // 3. Calculate per Unit Logic
-        if (str_contains($productName, 'banner')) {
-            // Logic Area (m2)
-            $area = 1.0;
-            if ($request->width && $request->height) {
-                // Convert cm to m2
-                $area = ($request->width * $request->height) / 10000;
-                // Min 1 m2 policy
-                if ($area < 1.0) $area = 1.0;
-            }
-            
-            // Base Price is per m2 for Banner
-            $materialPricePerUnit = ($basePrice * $multiplier) * $area;
-            
-        } elseif (str_contains($productName, 'stiker') || str_contains($productName, 'sticker')) {
-             if ($request->width && $request->height) {
-                 // Custom Size Logic
-                 $area = ($request->width * $request->height) / 10000;
-                 // Base Price is usually per A3 Sheet (~0.15 m2)
-                 // Convert to Per m2
-                 $basePerM2 = $basePrice / 0.15; 
-                 $materialPricePerUnit = $basePerM2 * $area * $multiplier;
-             } else {
-                 // Standard Sheet (A3)
-                 $materialPricePerUnit = $basePrice * $multiplier;
-             }
-        } else {
-             // Standard Unit (Kartu Nama, UV, etc)
-             $materialPricePerUnit = $basePrice * $multiplier;
+        // For banner, calculate by area
+        if (strtolower($product->name) === 'banner indoor' && $request->width && $request->height) {
+            $area = ($request->width / 100) * ($request->height / 100); // Convert cm to m
+            $subtotal = $product->base_price * $area * $request->quantity;
         }
 
         // 4. Calculate Unit Price Total (Material + Finishing)
@@ -282,6 +285,75 @@ class OrderController extends Controller
                 'total_price' => $total,
                 'is_urgent' => $request->is_urgent ?? false,
             ]
+        ], 200);
+    }
+
+    /**
+     * Approve an order
+     */
+    public function approve($id)
+    {
+        $order = Order::find($id);
+
+        if (!$order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order not found'
+            ], 404);
+        }
+
+        // Update order to approved status
+        $order->update([
+            'approval_status' => 'approved',
+            'status' => 'processing',
+            'reviewed_at' => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Order approved successfully',
+            'data' => $order->load(['product', 'material', 'finishing', 'files'])
+        ], 200);
+    }
+
+    /**
+     * Reject an order
+     */
+    public function reject(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'rejection_reason' => 'required|string|min:10',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $order = Order::find($id);
+
+        if (!$order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order not found'
+            ], 404);
+        }
+
+        // Update order to rejected status
+        $order->update([
+            'approval_status' => 'rejected',
+            'status' => 'cancelled',
+            'rejection_reason' => $request->rejection_reason,
+            'reviewed_at' => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Order rejected successfully',
+            'data' => $order->load(['product', 'material', 'finishing', 'files'])
         ], 200);
     }
 }

@@ -7,18 +7,17 @@ import '../../data/models/product_model.dart';
 import '../../data/models/material_model.dart';
 import '../../data/models/specification_model.dart';
 import '../../data/models/order_model.dart';
-import '../../data/models/finishing_model.dart';
+import '../../data/services/api_service.dart';
 
+// Provider yang mengelola seluruh proses pembuatan order di UI:
+// - Menyimpan produk yang dipilih
+// - Menyimpan spesifikasi order (ukuran, material, file)
+// - Menghitung harga otomatis
+// - Menyimpan riwayat order sementara untuk demo
 class OrderProvider with ChangeNotifier {
   Product? _selectedProduct;
   OrderSpecification _specification = OrderSpecification();
   int _totalPrice = 0;
-
-  // Stored calculation state to ensure consistency
-  int _materialCost = 0;
-  int _finishingCost = 0;
-  int _subtotal = 0;
-  int _urgentFee = 0;
 
   // Order history
   List<Order> _orders = [];
@@ -39,6 +38,10 @@ class OrderProvider with ChangeNotifier {
     return _selectedProduct!.basePrice;
   }
 
+  int get materialCost {
+    if (!_specification.isComplete() || _selectedProduct == null) return 0;
+
+    // Untuk Banner: hitung berdasarkan meter
   // Price getters now return stored state
   int get materialCost => _materialCost;
   int get finishingCost => _finishingCost;
@@ -131,6 +134,26 @@ class OrderProvider with ChangeNotifier {
     } else {
       return mPrice + fPrice;
     }
+
+    // Untuk produk lain: harga base per unit
+    return _selectedProduct!.basePrice;
+  }
+
+  int get finishingCost {
+    // Tidak ada biaya finishing terpisah karena sudah include di harga
+    return 0;
+  }
+
+  int get subtotal {
+    if (!_specification.isComplete() || _selectedProduct == null) return 0;
+
+    int pricePerUnit = materialCost;
+    return pricePerUnit * _specification.quantity;
+  }
+
+  int get urgentFee {
+    if (!_specification.isUrgent) return 0;
+    return (subtotal * 0.3).round();
   }
 
   // Estimasi waktu pengerjaan (dalam hari)
@@ -375,70 +398,26 @@ class OrderProvider with ChangeNotifier {
     final productName = _selectedProduct!.name.toLowerCase();
 
     if (productName.contains('banner')) {
-      // Banner: (Base * Multiplier) per m2
-      double area = _specification.getArea(); // m2
-
-      // Minimum charge 1 meter? (optional logic)
-      if (area < 1.0) area = 1.0; // Policy: Minimum calculate as 1m
-
-      double materialPricePerM2 = basePrice * materialMultiplier;
-      unitPrice = (materialPricePerM2 * area) + finishingCost;
-    } else if (productName.contains('stiker')) {
-      // Stiker: (Base * Multiplier) per piece/sheet
-
-      // Check custom size logic
-      if (_specification.size == 'Custom') {
-        // Convert Base Price (per A3) to per m2 approx
-        // A3+ is ~0.15 m2. So PricePerM2 = Base / 0.15
-        double basePerM2 = basePrice / 0.15;
-        double area = _specification.getArea();
-
-        double materialPrice = basePerM2 * area * materialMultiplier;
-        unitPrice = materialPrice + finishingCost;
-      } else {
-        // Standard Size (A3, A4 etc handled by quantity usually, but here checking multiplier)
-        double materialPrice = basePrice * materialMultiplier;
-
-        // Adjust for A4/A5 if base is A3?
-        // Our new base is (15k).
-        // If A4 selected (should be half price? or just different product?)
-        // Simplified: Assume Base Price is for the selected unit type in Product Model
-
-        unitPrice = materialPrice + finishingCost;
-      }
-    } else {
-      // Kartu Nama / UV / Others
-      // Simple: (Base * Multiplier) + Finishing
-      double materialPrice = basePrice * materialMultiplier;
-      unitPrice = materialPrice + finishingCost;
-    }
-
-    // 4. Calculate Costs for State
-    // Unit Price = Material Component + Finishing Component
-    // breakdownUnitPrice handles the logic for Unit Price display
-    // But for total cost components:
-
-    double totalMaterialCost = 0;
-    double totalFinishingCost = 0;
-
-    if (productName.contains('banner')) {
-      double area = _specification.getArea();
-      if (area < 1.0) area = 1.0;
-
-      double matPrice = (basePrice * materialMultiplier * area);
-      // Finishing is per unit (usually) but added to unit price
-      // So total finishing = finishingCost * quantity
-
-      totalMaterialCost = matPrice * _specification.quantity;
-      totalFinishingCost = finishingCost * _specification.quantity;
-    } else if (productName.contains('stiker')) {
-      if (_specification.size == 'Custom') {
-        double basePerM2 = basePrice / 0.15;
-        double area = _specification.getArea();
-        double matPrice = basePerM2 * area * materialMultiplier;
-
-        totalMaterialCost = matPrice * _specification.quantity;
-        totalFinishingCost = finishingCost * _specification.quantity;
+      // Banner: Rp 20.000/Meter (dihitung dari luas dalam meter persegi)
+      double area = _specification.getArea(); // dalam m²
+      subtotal = (_selectedProduct!.basePrice * area * _specification.quantity)
+          .round();
+    } else if (productName.contains('stiker vinyl')) {
+      // Stiker Vinyl: harga berdasarkan ukuran
+      String size = _specification.size ?? '';
+      int base = _selectedProduct!.basePrice;
+      if (size == 'A4') {
+        subtotal = base * _specification.quantity;
+      } else if (size == 'A3') {
+        subtotal = (base * 2) * _specification.quantity; // A3 = 2x A4
+      } else if (size == 'A5') {
+        subtotal = (base ~/ 2) * _specification.quantity; // A5 = 1/2 A4
+      } else if (size == 'Custom') {
+        // Custom: hitung per m² (asumsi input customWidth & customHeight dalam cm, konversi ke m)
+        double width = (_specification.customWidth ?? 0) / 100;
+        double height = (_specification.customHeight ?? 0) / 100;
+        double area = width * height;
+        subtotal = (base * area * _specification.quantity).round();
       } else {
         double matPrice = basePrice * materialMultiplier;
         totalMaterialCost = matPrice * _specification.quantity;
@@ -516,7 +495,7 @@ Saya ingin memesan:
   String _getFormattedMaterial() {
     if (_specification.materialId == null) return '-';
 
-    final materials = PrintMaterial.getDummyMaterials();
+    final materials = mat.Material.getDummyMaterials();
     final material = materials.firstWhere(
       (m) => m.id == _specification.materialId,
       orElse: () => materials[0],
@@ -550,111 +529,142 @@ Saya ingin memesan:
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
 
-  // Update order status (untuk demo - tidak perlu auth)
+  // Update order status (call API backend)
   Future<bool> updateOrderStatus(int orderId, String newStatus) async {
     try {
-      // Untuk demo, langsung update local order list
-      final index = _orders.indexWhere((order) => order.id == orderId);
-      if (index != -1) {
-        final oldOrder = _orders[index];
-        _orders[index] = Order(
-          id: oldOrder.id,
-          userId: oldOrder.userId,
-          productId: oldOrder.productId,
-          productName: oldOrder.productName,
-          materialId: oldOrder.materialId,
-          materialName: oldOrder.materialName,
-          size: oldOrder.size,
-          customWidth: oldOrder.customWidth,
-          customHeight: oldOrder.customHeight,
-          finishing: oldOrder.finishing,
-          quantity: oldOrder.quantity,
-          totalPrice: oldOrder.totalPrice,
-          status: newStatus,
-          approvalStatus: oldOrder.approvalStatus,
-          rejectionReason: oldOrder.rejectionReason,
-          reviewedAt: oldOrder.reviewedAt,
-          notes: oldOrder.notes,
-          filePaths: oldOrder.filePaths,
-          deliveryDate: oldOrder.deliveryDate,
-          isUrgent: oldOrder.isUrgent,
-          createdAt: oldOrder.createdAt,
-          updatedAt: DateTime.now(),
-        );
-        notifyListeners();
+      final success = await ApiService.updateOrderStatus(
+        orderId: orderId,
+        status: newStatus,
+      );
+
+      if (success) {
+        // Update local state
+        final index = _orders.indexWhere((order) => order.id == orderId);
+        if (index != -1) {
+          final oldOrder = _orders[index];
+          _orders[index] = Order(
+            id: oldOrder.id,
+            userId: oldOrder.userId,
+            productId: oldOrder.productId,
+            productName: oldOrder.productName,
+            materialId: oldOrder.materialId,
+            materialName: oldOrder.materialName,
+            size: oldOrder.size,
+            customWidth: oldOrder.customWidth,
+            customHeight: oldOrder.customHeight,
+            finishing: oldOrder.finishing,
+            quantity: oldOrder.quantity,
+            totalPrice: oldOrder.totalPrice,
+            status: newStatus,
+            approvalStatus: oldOrder.approvalStatus,
+            rejectionReason: oldOrder.rejectionReason,
+            reviewedAt: oldOrder.reviewedAt,
+            notes: oldOrder.notes,
+            filePaths: oldOrder.filePaths,
+            deliveryDate: oldOrder.deliveryDate,
+            isUrgent: oldOrder.isUrgent,
+            createdAt: oldOrder.createdAt,
+            updatedAt: DateTime.now(),
+          );
+          notifyListeners();
+        }
       }
-      return true;
+      return success;
     } catch (e) {
       print('Error updating order status: $e');
       return false;
     }
   }
 
-  // Fetch orders (untuk demo - tidak perlu auth)
+  // Fetch orders (fetch dari backend API)
   Future<void> fetchOrders() async {
     _isLoadingOrders = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      // Untuk demo, gunakan dummy data atau data lokal
-      await Future.delayed(const Duration(milliseconds: 500));
+      final ordersData = await ApiService.getOrders();
 
-      // Dummy orders untuk demo
-      _orders = [];
+      _orders = ordersData
+          .map((json) => Order.fromJson(json as Map<String, dynamic>))
+          .toList();
+
       _errorMessage = null;
     } catch (e) {
       _errorMessage = 'Terjadi kesalahan: $e';
       _orders = [];
+      print('Error fetching orders: $e');
     } finally {
       _isLoadingOrders = false;
       notifyListeners();
     }
   }
 
-  // Create new order (untuk demo - tidak perlu auth)
+  // Error message for order creation
+  String? _orderErrorMessage;
+  String? get orderErrorMessage => _orderErrorMessage;
+
+  // Create new order - Kirim ke backend API
   Future<bool> createOrder({
     required int productId,
     required int materialId,
   }) async {
-    try {
-      // Untuk demo, simpan ke local state saja
-      await Future.delayed(const Duration(milliseconds: 500));
+    _orderErrorMessage = null; // Reset error message
 
-      // Buat order dummy untuk demo
-      final newOrder = Order(
-        id: DateTime.now().millisecondsSinceEpoch,
-        userId: 1,
+    try {
+      print('🚀 Creating order...');
+      print('Product ID: $productId, Material ID: $materialId');
+      print('Quantity: ${_specification.quantity}');
+      print('Total Price: $_totalPrice');
+
+      // Call backend API to create order
+      final result = await ApiService.createOrder(
         productId: productId,
-        productName: _selectedProduct?.name ?? 'Product',
-        materialId: materialId,
-        materialName: 'Material Demo',
-        size: _specification.size ?? 'A4',
-        customWidth: _specification.customWidth,
-        customHeight: _specification.customHeight,
-        finishing: _specification.finishing ?? 'Tanpa Finishing',
+        customerName: 'Customer', // TODO: Get from user input or auth
+        customerPhone: '08123456789', // TODO: Get from user input or auth
+        customerEmail: 'customer@example.com', // Optional
+        width: _specification.customWidth,
+        height: _specification.customHeight,
         quantity: _specification.quantity,
-        totalPrice: _totalPrice,
-        status: 'pending',
-        approvalStatus: 'pending_review',
-        notes: _specification.notes,
-        filePaths: _specification.filePaths,
-        deliveryDate: _specification.deliveryDate,
+        materialId: materialId,
+        finishingId: null, // TODO: Add finishing ID if needed
+        subtotal: subtotal.toDouble(),
+        materialCost: materialCost.toDouble(),
+        finishingCost: finishingCost.toDouble(),
+        totalPrice: _totalPrice.toDouble(),
         isUrgent: _specification.isUrgent,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        deadlineDate: _specification.deliveryDate?.toIso8601String(),
+        customerNotes: _specification.notes,
+        filePaths: _specification.filePaths,
       );
 
-      _orders.insert(0, newOrder);
+      if (result['success'] == true) {
+        // Order created successfully in backend
+        print('✅ Order created successfully: ${result['message']}');
 
-      // Reset specification after successful order
-      _specification = OrderSpecification();
-      _totalPrice = 0;
-      notifyListeners();
+        // Optionally add to local state for immediate display
+        if (result['order'] != null) {
+          final newOrder = Order.fromJson(result['order']);
+          _orders.insert(0, newOrder);
+        }
 
-      return true;
+        // Reset specification after successful order
+        _specification = OrderSpecification();
+        _totalPrice = 0;
+        notifyListeners();
+
+        return true;
+      } else {
+        // Store error message
+        _orderErrorMessage = result['message'] ?? 'Failed to create order';
+        print('❌ Failed to create order: $_orderErrorMessage');
+        notifyListeners();
+        return false;
+      }
     } catch (e) {
-      print('Error creating order: $e');
+      _orderErrorMessage = 'Error: $e';
+      print('❌ Exception creating order: $e');
+      notifyListeners();
       return false;
     }
   }
@@ -662,7 +672,14 @@ Saya ingin memesan:
   // Approve order (untuk demo - tidak perlu auth)
   Future<bool> approveOrder(int orderId) async {
     try {
-      return await updateOrderStatus(orderId, 'approved');
+      final success = await ApiService.approveOrder(orderId);
+
+      if (success) {
+        // Refresh orders to get updated data
+        await fetchOrders();
+      }
+
+      return success;
     } catch (e) {
       print('Error approving order: $e');
       return false;
@@ -672,7 +689,14 @@ Saya ingin memesan:
   // Reject order (untuk demo - tidak perlu auth)
   Future<bool> rejectOrder(int orderId, String reason) async {
     try {
-      return await updateOrderStatus(orderId, 'rejected');
+      final success = await ApiService.rejectOrder(orderId, reason);
+
+      if (success) {
+        // Refresh orders to get updated data
+        await fetchOrders();
+      }
+
+      return success;
     } catch (e) {
       print('Error rejecting order: $e');
       return false;

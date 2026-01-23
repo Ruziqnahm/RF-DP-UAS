@@ -54,49 +54,12 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     }
   }
 
-  // Static list removed, using dynamic data from Finishing model
-
-  // Static list removed, using dynamic data from Finishing model
-
-  @override
-  void initState() {
-    super.initState();
-    // Initialize provider with safe defaults after build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initializeOrderDefaults();
-    });
-  }
-
-  void _initializeOrderDefaults() {
-    final provider = Provider.of<OrderProvider>(context, listen: false);
-    provider.setProduct(widget.product);
-
-    // 1. Set Default Size
-    final sizes = getSizesForProduct();
-    if (sizes.isNotEmpty) {
-      provider.setSize(sizes.first);
-    }
-
-    // 2. Set Default Material (Filter by Product ID)
-    final allMaterials = PrintMaterial.getDummyMaterials();
-    final validMaterials =
-        allMaterials.where((m) => m.productId == widget.product.id).toList();
-
-    if (validMaterials.isNotEmpty) {
-      provider.setMaterial(validMaterials.first.id);
-    }
-
-    // 3. Set Default Finishing (Dynamic)
-    final allFinishings = Finishing.getDummyFinishings();
-    final validFinishings =
-        allFinishings.where((f) => f.productId == widget.product.id).toList();
-
-    if (validFinishings.isNotEmpty) {
-      provider.setFinishing(validFinishings.first.name);
-    } else {
-      provider.setFinishing('Tanpa Finishing');
-    }
-  }
+  final List<String> finishings = [
+    'Glossy',
+    'Doff',
+    'Laminating',
+    'Tanpa Finishing'
+  ];
 
   @override
   void dispose() {
@@ -306,7 +269,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   }
 
   Widget _buildMaterialDropdown(OrderProvider provider) {
-    final materials = PrintMaterial.getDummyMaterials();
+    final materials = mat.Material.getDummyMaterials();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -788,10 +751,24 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           setState(() {
             _isSubmittingOrder = false;
           });
+
+          // Show detailed error message from provider
+          final errorMsg = provider.orderErrorMessage ??
+              'Gagal menyimpan pesanan. Silakan coba lagi.';
+
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Gagal menyimpan pesanan. Silakan coba lagi.'),
+            SnackBar(
+              content: Text(errorMsg),
               backgroundColor: Colors.red,
+              duration: const Duration(seconds: 5),
+              action: SnackBarAction(
+                label: 'Lihat Log',
+                textColor: Colors.white,
+                onPressed: () {
+                  // User can check console for detailed logs
+                  print('Check console for detailed error logs');
+                },
+              ),
             ),
           );
         }

@@ -1,3 +1,6 @@
+// Model `Finishing` merepresentasikan opsi finishing yang dapat dipilih
+// untuk sebuah produk (mis. laminasi, coating, cutting). Field
+// `additionalPrice` menambahkan biaya di atas harga dasar produk.
 class Finishing {
   final int id;
   final int productId;

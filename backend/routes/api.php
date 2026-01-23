@@ -19,6 +19,9 @@ Route::get('/orders', [OrderController::class, 'index']);
 Route::post('/orders', [OrderController::class, 'store']);
 Route::get('/orders/{id}', [OrderController::class, 'show']);
 Route::patch('/orders/{id}/status', [OrderController::class, 'updateStatus']);
+Route::post('/orders/{id}/approve', [OrderController::class, 'approve']);
+Route::post('/orders/{id}/reject', [OrderController::class, 'reject']);
+
 
 // Price Calculator
 Route::post('/calculate-price', [OrderController::class, 'calculatePrice']);
